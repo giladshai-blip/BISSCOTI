@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>מערכת אחזקה — ביסקוטי</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --blue: #1d4ed8; --blue-light: #3b82f6; --blue-pale: #eff6ff; --blue-border: #bfdbfe;
+            --orange: #ea580c; --orange-pale: #fff7ed; --orange-border: #fed7aa;
+            --purple: #7c3aed; --purple-pale: #faf5ff; --purple-border: #e9d5ff;
+            --green: #16a34a; --green-pale: #f0fdf4; --green-border: #bbf7d0;
+            --red: #dc2626; --red-pale: #fef2f2; --red-border: #fecaca;
+            --teal: #0d9488; --teal-pale: #f0fdfa; --teal-border: #99f6e4;
+            --bg: #f1f5f9; --surface: #ffffff;
+            --border: #e2e8f0; --border-strong: #cbd5e1;
+            --text: #0f172a; --text-2: #334155; --muted: #64748b; --subtle: #94a3b8;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --header-h: 60px;
+            --sidebar-w: 240px;
+            --nav-h: 62px;
+            --radius: 14px; --radius-sm: 10px; --radius-lg: 18px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+        }
+
+        html, body { height: 100%; }
+        body { font-family: 'Heebo', sans-serif; background: var(--bg); color: var(--text); direction: rtl; -webkit-font-smoothing: antialiased; }
+        #root { height: 100%; }
+
+        /* ─── SCROLLBAR ─── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ─── LAYOUT ─── */
+        .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .app-header {
+            height: var(--header-h); flex-shrink: 0;
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; z-index: 50; box-shadow: var(--shadow-sm);
+        }
+        .main-body { display: flex; flex: 1; overflow: hidden; }
+
+        /* SIDEBAR — desktop */
+        .sidebar {
+            width: var(--sidebar-w); flex-shrink: 0;
+            background: var(--surface); border-left: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow-y: auto; padding: 12px 10px 20px;
+        }
+        .sidebar-section-label {
+            font-size: 10px; font-weight: 700; color: var(--subtle);
+            padding: 8px 12px 4px; letter-spacing: 1.2px; text-transform: uppercase;
+        }
+
+        /* CONTENT */
+        .content-wrap { flex: 1; overflow-y: auto; overflow-x: hidden; }
+        .content-inner { padding: 28px; max-width: 1200px; }
+
+        /* BOTTOM NAV — mobile */
+        .bottom-nav {
+            height: calc(var(--nav-h) + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: var(--surface); border-top: 1px solid var(--border);
+            display: flex; flex-shrink: 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+        }
+
+        /* Responsive breakpoints */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .content-inner { padding: 16px; max-width: 100%; }
+        }
+        @media (min-width: 769px) {
+            .bottom-nav { display: none; }
+        }
+
+        /* ─── NAV ITEMS ─── */
+        .nav-item {
+            border: none; background: transparent; cursor: pointer;
+            font-family: 'Heebo', sans-serif; display: flex; align-items: center;
+            transition: all 0.15s; text-align: right;
+        }
+
+        /* Mobile nav */
+        @media (max-width: 768px) {
+            .nav-item { flex: 1; flex-direction: column; justify-content: center; gap: 3px; padding: 8px 4px; border-radius: 0; }
+            .nav-label { font-size: 9.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60px; }
+            .nav-icon { width: 32px; height: 32px; border-radius: 9px; font-size: 14px; }
+        }
+        /* Desktop nav */
+        @media (min-width: 769px) {
+            .nav-item { flex-direction: row; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); width: 100%; }
+            .nav-item:hover:not(.active) { background: var(--bg); }
+            .nav-item.active { background: var(--nav-active-bg, var(--blue-pale)); }
+            .nav-label { font-size: 14px; font-weight: 600; }
+            .nav-icon { width: 32px; height: 32px; border-radius: 8px; font-size: 14px; }
+        }
+        .nav-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        /* ─── INPUTS ─── */
+        .input {
+            width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            padding: 11px 14px; font-size: 16px; font-family: 'Heebo', sans-serif;
+            outline: none; background: var(--bg); color: var(--text);
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .input:focus { border-color: var(--blue-light); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); background: var(--surface); }
+        textarea.input { resize: none; line-height: 1.6; }
+
+        /* ─── BUTTONS ─── */
+        .btn {
+            border: none; border-radius: var(--radius-sm); font-family: 'Heebo', sans-serif;
+            font-weight: 700; cursor: pointer; display: inline-flex; align-items: center;
+            justify-content: center; gap: 8px; transition: all 0.15s; white-space: nowrap;
+        }
+        .btn:active:not(:disabled) { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-sm { font-size: 13px; padding: 7px 14px; }
+        .btn-md { font-size: 14px; padding: 10px 18px; }
+        .btn-lg { font-size: 15px; padding: 13px 20px; }
+        .btn-xl { font-size: 16px; padding: 14px 24px; }
+        .btn-full { width: 100%; }
+        .btn-blue { background: var(--blue); color: white; box-shadow: 0 2px 8px rgba(29,78,216,0.2); }
+        .btn-blue:hover:not(:disabled) { background: #1e40af; box-shadow: 0 4px 12px rgba(29,78,216,0.3); }
+        .btn-orange { background: var(--orange); color: white; }
+        .btn-orange:hover:not(:disabled) { background: #c2410c; }
+        .btn-green { background: var(--green); color: white; }
+        .btn-green:hover:not(:disabled) { background: #15803d; }
+        .btn-teal { background: var(--teal); color: white; }
+        .btn-ghost { background: var(--bg); color: var(--text-2); border: 1.5px solid var(--border); }
+        .btn-ghost:hover:not(:disabled) { background: var(--border); }
+        .btn-danger { background: var(--red-pale); color: var(--red); border: 1.5px solid var(--red-border); }
+        .btn-icon { background: transparent; border: none; color: var(--muted); padding: 7px; border-radius: 8px; }
+        .btn-icon:hover { background: var(--bg); color: var(--text); }
+
+        /* ─── BADGES ─── */
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+        /* ─── CARDS ─── */
+        .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); }
+        .ticket-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; transition: box-shadow 0.15s, border-color 0.15s; }
+        .ticket-card:hover { box-shadow: var(--shadow); }
+        .ticket-card.urgent { border-color: var(--red-border); background: #fff8f8; }
+
+        /* ─── FULLSCREEN IMAGE ─── */
+        .fullscreen-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s; cursor: zoom-out; }
+        .fullscreen-img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: scale(0.95); animation: zoomIn 0.2s forwards; cursor: default; }
+        @keyframes zoomIn { to { transform: scale(1); } }
+
+        /* ─── VIEW TOGGLE ─── */
+        .view-toggle { display: inline-flex; background: var(--border); border-radius: 8px; padding: 3px; }
+        .view-btn { padding: 5px 12px; border-radius: 6px; border: none; background: transparent; color: var(--muted); cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .view-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+
+        /* ─── GRIDS ─── */
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        @media (min-width: 769px) { .stat-grid { grid-template-columns: repeat(5, 1fr); } }
+        .tickets-grid { display: flex; flex-direction: column; gap: 12px; }
+        @media (min-width: 1024px) { .tickets-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; } }
+        .form-grid { display: grid; gap: 16px; }
+        @media (min-width: 769px) { .form-grid-2 { grid-template-columns: 1fr 1fr; } }
+
+        /* ─── UNIFIED TICKET TABLE (LIST VIEW) ─── */
+        .ticket-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow-sm); }
+        .ticket-table { width: 100%; border-collapse: collapse; min-width: 900px; text-align: right; }
+        .ticket-table th { padding: 12px 14px; font-size: 13px; font-weight: 700; color: var(--muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .ticket-table td { padding: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 14px; }
+        .ticket-table tr:hover td { background: #f8faff; cursor: pointer; transition: 0.1s; }
+        .ticket-table tr:last-child td { border-bottom: none; }
+
+        /* ─── STAT CARD ─── */
+        .stat-card { border-radius: var(--radius); padding: 16px; display: flex; align-items: center; gap: 12px; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; flex-shrink: 0; }
+        .stat-count { font-size: 32px; font-weight: 900; line-height: 1; }
+        .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+
+        /* ─── MODAL ─── */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 200; display: flex; backdrop-filter: blur(2px); animation: fadeIn 0.18s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 768px) {
+            .modal-overlay { align-items: flex-end; }
+            .modal-box { width: 100%; max-height: 92vh; border-radius: 20px 20px 0 0; animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1); padding-bottom: calc(20px + var(--safe-bottom)); }
+            @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        }
+        @media (min-width: 769px) {
+            .modal-overlay { align-items: center; justify-content: center; padding: 20px; }
+            .modal-box { max-width: 640px; width: 100%; max-height: 90vh; border-radius: 20px; animation: popIn 0.2s ease; padding-bottom: 24px; }
+            @keyframes popIn { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            .modal-handle { display: none !important; }
+        }
+        .modal-box { background: var(--surface); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .modal-handle { width: 36px; height: 4px; background: var(--border-strong); border-radius: 99px; margin: 10px auto 0; }
+        .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); z-index: 5; }
+        .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+
+        /* ─── FORM ELEMENTS ─── */
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+        .form-hint { font-size: 11px; color: var(--subtle); margin-top: 3px; }
+
+        .priority-group { display: flex; gap: 8px; }
+        .priority-btn { flex: 1; padding: 10px 8px; border-radius: var(--radius-sm); border: 2px solid var(--border); background: var(--surface); font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; }
+
+        .tag-btn { padding: 6px 14px; border-radius: 99px; border: 1.5px solid; font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+
+        /* ─── DIVIDER ─── */
+        .divider { display: flex; align-items: center; gap: 10px; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .divider span { font-size: 12px; color: var(--subtle); white-space: nowrap; }
+
+        /* ─── EMPTY STATE ─── */
+        .empty-state { text-align: center; padding: 52px 24px; background: var(--bg); border-radius: var(--radius); border: 1.5px dashed var(--border); }
+        .empty-icon { font-size: 44px; color: var(--border-strong); display: block; margin-bottom: 14px; }
+        .empty-title { font-weight: 700; color: var(--muted); font-size: 16px; }
+        .empty-sub { font-size: 13px; color: var(--subtle); margin-top: 4px; }
+
+        /* ─── ALERTS ─── */
+        .alert { border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .alert-success { background: var(--green-pale); border: 1px solid var(--green-border); color: var(--green); }
+        .alert-error { background: var(--red-pale); border: 1px solid var(--red-border); color: var(--red); }
+        .alert-warning { background: #fefce8; border: 1px solid #fef08a; color: #a16207; }
+        .alert-info { background: var(--blue-pale); border: 1px solid var(--blue-border); color: var(--blue); }
+
+        /* ─── ASSIGNED BADGE ─── */
+        .assigned-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; background: var(--blue-pale); color: var(--blue); border: 1px solid var(--blue-border); }
+
+        /* ─── INFO ROW ─── */
+        .info-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--muted); }
+        .info-row i { margin-top: 1px; flex-shrink: 0; width: 14px; text-align: center; }
+
+        /* ─── SECTION BOX ─── */
+        .section-box { border-radius: var(--radius-sm); padding: 14px; }
+        .section-box-blue { background: var(--blue-pale); border: 1px solid var(--blue-border); }
+        .section-box-green { background: var(--green-pale); border: 1px solid var(--green-border); }
+        .section-box-teal { background: var(--teal-pale); border: 1px solid var(--teal-border); }
+        .section-box-purple { background: var(--purple-pale); border: 1px solid var(--purple-border); }
+        .section-box-gray { background: var(--bg); border: 1px solid var(--border); }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 0.7s linear infinite; }
+
+        /* ─── LOGIN ─── */
+        .login-wrap { min-height: 100vh; background: linear-gradient(145deg, #dbeafe 0%, #f1f5f9 50%, #faf5ff 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 20px; }
+        .login-card { width: 100%; max-width: 420px; background: var(--surface); border-radius: 22px; padding: 36px 32px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+
+        /* ─── USER CHIP ─── */
+        .user-chip { display: flex; align-items: center; gap: 8px; border-radius: 99px; padding: 5px 12px 5px 5px; border: 1px solid; }
+        .user-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; flex-shrink: 0; }
+
+        /* ─── WORKER ACTION BOX ─── */
+        .action-zone { border-top: 2px dashed var(--border); margin-top: 14px; padding-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+        /* ─── PAGE HEADER ─── */
+        .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .page-title { font-size: 22px; font-weight: 800; color: var(--text); }
+        .count-badge { padding: 4px 14px; border-radius: 99px; font-weight: 700; font-size: 14px; }
+
+        /* ─── SEARCH + FILTER BAR ─── */
+        .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+        .search-wrap { position: relative; flex: 1; min-width: 180px; }
+        .search-wrap i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--subtle); font-size: 13px; pointer-events: none; }
+        .search-wrap .input { padding-right: 36px; }
+        .filter-pills { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 10px; flex-wrap: wrap; }
+        .filter-pill { padding: 5px 12px; border-radius: 8px; border: none; cursor: pointer; font-size: 12px; font-weight: 500; font-family: 'Heebo', sans-serif; background: transparent; color: var(--muted); transition: all 0.12s; white-space: nowrap; }
+        .filter-pill.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.1); font-weight: 600; }
+
+        /* ─── NOTE HISTORY ─── */
+        .notes-list { background: var(--purple-pale); border-radius: var(--radius-sm); padding: 10px; max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .note-item { background: var(--surface); border-radius: 8px; padding: 10px 12px; border: 1px solid var(--purple-border); }
+        .note-meta { font-size: 10px; font-weight: 700; color: var(--purple); margin-bottom: 3px; }
+        .note-text { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+        /* ─── WORKER STATS ─── */
+        .worker-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg); border-radius: var(--radius-sm); }
+        .worker-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: white; font-size: 15px; flex-shrink: 0; }
+
+        /* ─── USERS LIST ─── */
+        .user-row { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; transition: box-shadow 0.12s; }
+        .user-row:hover { box-shadow: var(--shadow-sm); }
+        .user-big-avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 800; color: white; flex-shrink: 0; }
+
+        /* ─── RESPONSIVE CONTENT ─── */
+        @media (min-width: 1280px) {
+            .content-inner { padding: 32px 36px; }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwB9n9tXxHsV7pnFSUOzO8Pv39qeVm0huAqn2ar--TPY6eR7rGA5totXdlDRUE7aD-BDw/exec';
+    const AVAILABLE_TAGS = ['בטיחות', 'הוזמן חלק', 'ממתין לספק', 'חשמל', 'מכניקה', 'צנרת'];
+    const STORAGE_KEY = 'maintenance_user_v2';
+
+    const S = { OPEN: 'פתוחה', TAKEN: 'בטיפול', DONE: 'טופלה', VENDOR: 'הועבר לספק' };
+
+    const ROLES = {
+        requester: { color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe', label: 'עובד ייצור', icon: 'user' },
+        worker:    { color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', label: 'איש אחזקה', icon: 'tools' },
+        manager:   { color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff', label: 'מנהל',       icon: 'chart-bar' },
+    };
+
+    const Icon = ({ n, cls, style }) => <i className={`fas fa-${n}${cls?' '+cls:''}`} style={style} />;
+    const isMobile = () => window.innerWidth <= 1024;
+    const genId = () => 'TKT-' + Math.floor(1000 + Math.random() * 9000);
+
+    // ── STATUS BADGE ──
+    function SBadge({ s }) {
+        const map = {
+            [S.OPEN]:   { bg:'#fee2e2', c:'#991b1b', dot:'#ef4444' },
+            [S.TAKEN]:  { bg:'#ffedd5', c:'#9a3412', dot:'#f97316' },
+            [S.DONE]:   { bg:'#dcfce7', c:'#166534', dot:'#22c55e' },
+            [S.VENDOR]: { bg:'#f0fdfa', c:'#0f766e', dot:'#0d9488' },
+        };
+        const { bg, c, dot } = map[s] || map[S.OPEN];
+        return <span className="badge" style={{ background: bg, color: c }}>
+            <span className="dot" style={{ background: dot }} />{s}
+        </span>;
+    }
+
+    // ── PRIORITY BADGE ──
+    function PBadge({ p }) {
+        const map = { 'דחופה':['#fef2f2','#dc2626','exclamation-circle'], 'רגילה':['#eff6ff','#2563eb','minus-circle'], 'נמוכה':['#f8fafc','#64748b','arrow-circle-down'] };
+        const [bg, c, icon] = map[p] || map['רגילה'];
+        return <span className="badge" style={{ background: bg, color: c }}><Icon n={icon} />{p}</span>;
+    }
+
+    // ── LABEL ──
+    const Label = ({ children }) => <div className="form-label">{children}</div>;
+    const Hint = ({ children }) => <div className="form-hint">{children}</div>;
+
+    // ═══════════════ UNIFIED TICKET TABLE ═══════════════
+    function UnifiedTicketTable({ tickets, onRowClick }) {
+        if (!tickets || tickets.length === 0) return null;
+        return (
+            <div className="ticket-table-wrap">
+                <table className="ticket-table">
+                    <thead><tr>
+                        <th>תמונה</th><th>מזהה</th><th>מיקום</th><th>דחיפות</th>
+                        <th>תיאור</th><th>נפתח ע"י</th><th>מטפל</th><th>סטטוס</th><th>תאריך</th>
+                    </tr></thead>
+                    <tbody>
+                        {tickets.map(t=>{
+                            const thumb = t.images?.[0] || t.image;
+                            return (
+                                <tr key={t.id} onClick={()=>onRowClick(t)}>
+                                    <td>{thumb?<img src={thumb} style={{width:40,height:40,objectFit:'cover',borderRadius:8,border:'1px solid var(--border)'}} alt=""/>:<div style={{width:40,height:40,borderRadius:8,background:'var(--bg)',border:'1.5px dashed var(--border)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--subtle)'}}><Icon n="image"/></div>}</td>
+                                    <td><code style={{ fontSize:14, fontWeight:800, color:'var(--text)', border:'1px solid var(--border-strong)', background:'var(--surface)', padding:'2px 8px', borderRadius:6 }}>{t.id}</code></td>
+                                    <td><strong>{t.location}</strong></td>
+                                    <td><PBadge p={t.priority}/></td>
+                                    <td style={{maxWidth:220}}><div style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:'var(--muted)'}}>{t.description}</div></td>
+                                    <td style={{fontSize:13,color:'var(--muted)'}}>{t.openedByName}</td>
+                                    <td>{t.assignedToName?<span style={{fontSize:12,color:'var(--blue)'}}>{t.assignedToName}</span>:<span style={{color:'var(--subtle)',fontSize:12}}>—</span>}</td>
+                                    <td><SBadge s={t.status}/></td>
+                                    <td style={{fontSize:12,color:'var(--subtle)',whiteSpace:'nowrap'}}>{t.date}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        );
+    }
+
+    // ═══════════════ LOGIN ═══════════════
+    function Login({ onLogin }) {
+        const [u, setU] = useState(''); const [p, setP] = useState('');
+        const [load, setLoad] = useState(false); const [err, setErr] = useState(''); const [show, setShow] = useState(false);
+
+        const go = async () => {
+            if (!u.trim() || !p.trim()) { setErr('יש למלא שם משתמש וסיסמה'); return; }
+            setLoad(true); setErr('');
+            try {
+                const r = await fetch(`${API_URL}?action=login&username=${encodeURIComponent(u.trim())}&password=${encodeURIComponent(p.trim())}`);
+                const d = await r.json();
+                if (d.success) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d.user)); onLogin(d.user); }
+                else setErr('שם משתמש או סיסמה שגויים');
+            } catch { setErr('שגיאת חיבור — נסה שוב'); }
+            setLoad(false);
+        };
+
+        return (
+            <div className="login-wrap">
+                <div style={{ textAlign:'center', marginBottom:32 }}>
+                    <div style={{ width:76, height:76, borderRadius:20, background:'var(--blue)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', boxShadow:'0 10px 36px rgba(29,78,216,0.35)' }}>
+                        <Icon n="wrench" style={{ color:'white', fontSize:30 }} />
+                    </div>
+                    <h1 style={{ fontSize:30, fontWeight:900 }}>מערכת אחזקה</h1>
+                    <p style={{ color:'var(--muted)', marginTop:6, fontSize:14 }}>ביסקוטי — ניהול קריאות שירות</p>
+                </div>
+                <div className="login-card">
+                    <div className="form-grid" style={{ gap:16 }}>
+                        <div className="form-group">
+                            <Label>שם משתמש</Label>
+                            <div style={{ position:'relative' }}>
+                                <Icon n="user" style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', color:'var(--subtle)', fontSize:13 }} />
+                                <input className="input" value={u} onChange={e=>setU(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()} placeholder="הכנס שם משתמש" style={{ paddingRight:36 }} autoComplete="username" />
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <Label>סיסמה</Label>
+                            <div style={{ position:'relative' }}>
+                                <Icon n="lock" style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', color:'var(--subtle)', fontSize:13 }} />
+                                <input className="input" type={show?'text':'password'} value={p} onChange={e=>setP(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()} placeholder="הכנס סיסמה" style={{ paddingRight:36, paddingLeft:36 }} autoComplete="current-password" />
+                                <button onClick={()=>setShow(!show)} className="btn btn-icon" style={{ position:'absolute', left:6, top:'50%', transform:'translateY(-50%)' }}><Icon n={show?'eye-slash':'eye'} /></button>
+                            </div>
+                        </div>
+                        {err && <div className="alert alert-error"><Icon n="exclamation-circle" />{err}</div>}
+                        <button className="btn btn-blue btn-full btn-xl" onClick={go} disabled={load}>
+                            {load ? <><Icon n="spinner" cls="spinner" />מתחבר...</> : <><Icon n="sign-in-alt" />כניסה</>}
+                        </button>
+                    </div>
+                </div>
+                <p style={{ color:'var(--subtle)', fontSize:12, marginTop:24 }}>לא זוכר סיסמה? פנה למנהל המערכת</p>
+            </div>
+        );
+    }
+
+    // ═══════════════ MAIN APP ═══════════════
+    function App() {
+        const [user, setUser] = useState(null);
+        const [ready, setReady] = useState(false);
+        const [tickets, setTickets] = useState([]);
+        const [sync, setSync] = useState('מחובר');
+        const [tab, setTab] = useState(null);
+        const [fullImage, setFullImage] = useState(null);
+
+        // הגדרת ברירת המחדל - תצוגת רשימה (שורות) בדסקטופ, אריחים במובייל
+        const [viewMode, setViewMode] = useState(isMobile() ? 'grid' : 'list');
+
+        useEffect(() => {
+            const s = localStorage.getItem(STORAGE_KEY);
+            if (s) { try { setUser(JSON.parse(s)); } catch { localStorage.removeItem(STORAGE_KEY); } }
+            setReady(true);
+        }, []);
+
+        useEffect(() => {
+            if (!user) return;
+            loadTickets();
+            const defaults = { requester:'my', worker:'open', manager:'dashboard' };
+            setTab(defaults[user.role] || 'my');
+        }, [user]);
+
+        const loadTickets = async () => {
+            setSync('טוען...');
+            try {
+                const r = await fetch(API_URL);
+                const d = await r.json();
+                if (!d.error) { setTickets(d.sort((a,b)=>new Date(b.date)-new Date(a.date))); setSync('מעודכן'); }
+                else setSync('שגיאה');
+            } catch { setSync('שגיאת חיבור'); }
+        };
+
+        const push = async (action, ticket) => {
+            setSync('מסנכרן...');
+            try { await fetch(API_URL, { method:'POST', body:JSON.stringify({action,ticket}), headers:{"Content-Type":"text/plain;charset=utf-8"}, mode:'no-cors' }); setSync('מעודכן'); }
+            catch { setSync('שגיאת סנכרון'); }
+        };
+
+        const addTicket = t => {
+            const tk = { ...t, id:genId(), status:S.OPEN, date:new Date().toISOString().split('T')[0], tags:[], managerNotes:[], openedBy:user.username, openedByName:user.name, assignedTo:'', assignedToName:'', takenDate:'', workDescription:'', vendorName:'', closedDate:'' };
+            setTickets(prev => [tk, ...prev]); push('ADD', tk);
+        };
+
+        const editTicket = (id, ch) => {
+            setTickets(prev => { const u = prev.map(t => t.id===id ? {...t,...ch} : t); push('UPDATE', u.find(t=>t.id===id)); return u; });
+        };
+
+        const delTicket = id => { setTickets(prev=>prev.filter(t=>t.id!==id)); push('DELETE',{id}); };
+
+        const addNote = (id, text) => {
+            const n = { id:Date.now(), text, date:new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}), by:user.name };
+            setTickets(prev => { const u = prev.map(t => t.id===id ? {...t, managerNotes:[...(t.managerNotes||[]),n]} : t); push('UPDATE', u.find(t=>t.id===id)); return u; });
+        };
+
+        const toggleTag = (id, tag) => {
+            setTickets(prev => { const u = prev.map(t => { if(t.id!==id) return t; const c=t.tags||[]; return {...t, tags:c.includes(tag)?c.filter(x=>x!==tag):[...c,tag]}; }); push('UPDATE', prev.find(t=>t.id===id)); return u; });
+        };
+
+        const logout = () => { localStorage.removeItem(STORAGE_KEY); setUser(null); setTickets([]); };
+
+        if (!ready) return null;
+        if (!user) return <Login onLogin={u=>setUser(u)} />;
+
+        const synced = sync==='מעודכן'||sync==='מחובר';
+        const rc = ROLES[user.role] || ROLES.requester;
+        const myTix = tickets.filter(t=>t.openedBy===user.username);
+        const openTix = tickets.filter(t=>t.status===S.OPEN);
+        // עדכון הסינון כך שגם קריאות ששוייכו באופן ידני על ידי מנהל (לפי שם) יופיעו תחת "שלי"
+        const mineTix = tickets.filter(t=>(t.assignedTo===user.username || t.assignedToName===user.name)&&(t.status===S.TAKEN||t.status===S.VENDOR));
+
+        const TABS = {
+            requester: [
+                { id:'new',  icon:'plus-circle', label:'קריאה חדשה' },
+                { id:'my',   icon:'list',        label:`הקריאות שלי (${myTix.length})` },
+            ],
+            worker: [
+                { id:'open', icon:'exclamation-circle', label:`פתוחות (${openTix.length})` },
+                { id:'mine', icon:'tools',              label:`שלי (${mineTix.length})` },
+                { id:'all',  icon:'list',               label:'הכל' },
+            ],
+            manager: [
+                { id:'dashboard', icon:'chart-bar', label:'דשבורד' },
+                { id:'all',       icon:'list',      label:'כל הקריאות' },
+                { id:'users',     icon:'users',     label:'משתמשים' },
+            ],
+        };
+        const tabs = TABS[user.role] || [];
+
+        const NavItems = () => tabs.map(t => (
+            <button key={t.id} className={`nav-item${tab===t.id?' active':''}`}
+                style={{ '--nav-active-bg': rc.bg }} onClick={()=>setTab(t.id)}>
+                <div className="nav-icon" style={{ background: tab===t.id ? rc.bg : 'transparent' }}>
+                    <Icon n={t.icon} style={{ color: tab===t.id ? rc.color : 'var(--subtle)' }} />
+                </div>
+                <span className="nav-label" style={{ color: tab===t.id ? rc.color : 'var(--subtle)' }}>{t.label}</span>
+            </button>
+        ));
+
+        const ctx = { tickets, editTicket, delTicket, addNote, toggleTag, user, onImageClick: setFullImage, viewMode, setViewMode };
+
+        return (
+            <div className="app-shell">
+                {/* HEADER */}
+                <header className="app-header">
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <div style={{ width:34, height:34, borderRadius:9, background:rc.color, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 2px 8px ${rc.color}44` }}>
+                            <Icon n="wrench" style={{ color:'white', fontSize:14 }} />
+                        </div>
+                        <span style={{ fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>מערכת אחזקה</span>
+                        <span style={{ display:'flex', alignItems:'center', gap:4, background:synced?'#f0fdf4':'#fefce8', color:synced?'#15803d':'#a16207', padding:'2px 9px', borderRadius:99, fontSize:11, fontWeight:500 }}>
+                            <span className={synced?'':'pulse'} style={{ width:6, height:6, borderRadius:'50%', background:synced?'#22c55e':'#eab308', display:'inline-block' }} />
+                            {sync}
+                        </span>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <div className="user-chip" style={{ background:rc.bg, borderColor:rc.border }}>
+                            <div className="user-avatar" style={{ background:rc.color }}>{user.name?.charAt(0)||'?'}</div>
+                            <div>
+                                <div style={{ fontSize:12, fontWeight:700, color:rc.color, lineHeight:1.1 }}>{user.name}</div>
+                                <div style={{ fontSize:10, color:'var(--subtle)', lineHeight:1.1, marginTop:1 }}>{rc.label}</div>
+                            </div>
+                        </div>
+                        <button className="btn btn-icon" onClick={logout} title="יציאה"><Icon n="sign-out-alt" /></button>
+                    </div>
+                </header>
+
+                <div className="main-body">
+                    {/* SIDEBAR */}
+                    <nav className="sidebar hide-scroll">
+                        <div className="sidebar-section-label">ניווט</div>
+                        <NavItems />
+                        <div style={{ marginTop:'auto', padding:'10px 12px', fontSize:11, color:'var(--subtle)' }}>ביסקוטי © 2025</div>
+                    </nav>
+
+                    {/* CONTENT */}
+                    <div className="content-wrap hide-scroll">
+                        <div className="content-inner">
+                            {user.role==='requester' && tab==='new' && <NewTicketForm onAdd={t=>{addTicket(t);setTab('my');}} />}
+                            {user.role==='requester' && tab==='my'  && <MyTickets tickets={myTix} onEdit={editTicket} onDelete={delTicket} onNew={()=>setTab('new')} {...ctx} />}
+                            {user.role==='worker' && tab==='open' && <WorkerOpen tickets={openTix} {...ctx} />}
+                            {user.role==='worker' && tab==='mine' && <WorkerMine tickets={mineTix} {...ctx} />}
+                            {user.role==='worker' && tab==='all'  && <AllTickets isManager={false} {...ctx} />}
+                            {user.role==='manager' && tab==='dashboard' && <Dashboard tickets={tickets} />}
+                            {user.role==='manager' && tab==='all'       && <AllTickets isManager={true} {...ctx} />}
+                            {user.role==='manager' && tab==='users'     && <UsersManager />}
+                        </div>
+                    </div>
+                </div>
+
+                {/* BOTTOM NAV */}
+                <nav className="bottom-nav"><NavItems /></nav>
+
+                {fullImage && (
+                    <div className="fullscreen-overlay" onClick={() => setFullImage(null)}>
+                        <img src={fullImage} className="fullscreen-img" onClick={e => e.stopPropagation()} alt="" />
+                        <button className="btn btn-icon" style={{ position:'absolute', top:20, right:20, color:'white', background:'rgba(255,255,255,0.2)', fontSize:20 }} onClick={() => setFullImage(null)}>
+                            <Icon n="times" />
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ═══════════════ NEW TICKET FORM ═══════════════
+    function NewTicketForm({ onAdd }) {
+        const [form, setForm] = useState({ description:'', location:'', priority:'רגילה', images:[] });
+        const fileRef = useRef(null);
+
+        const resize = f => new Promise(r => {
+            const rd = new FileReader();
+            rd.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const c = document.createElement('canvas');
+                    let [w,h] = [img.width,img.height];
+                    if (w > 800) { h = h * 800 / w; w = 800; }
+                    c.width = w; c.height = h;
+                    c.getContext('2d').drawImage(img,0,0,w,h);
+                    r(c.toDataURL('image/jpeg',0.72));
+                };
+                img.src = e.target.result;
+            };
+            rd.readAsDataURL(f);
+        });
+
+        const handleFiles = async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+
+            const remainingSlots = 3 - form.images.length;
+            const filesToProcess = files.slice(0, remainingSlots);
+
+            const newImages = await Promise.all(filesToProcess.map(resize));
+            setForm(prev => ({ ...prev, images: [...prev.images, ...newImages] }));
+
+            if (fileRef.current) fileRef.current.value = '';
+        };
+
+        const removeImage = (idx) => {
+            setForm(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }));
+        };
+
+        const submit = () => { if(form.location.trim() && form.description.trim()) onAdd(form); };
+
+        return (
+            <div style={{ maxWidth:600 }}>
+                <div className="page-header"><h1 className="page-title">קריאה חדשה</h1></div>
+
+                <div className="form-grid" style={{ gap:16 }}>
+                    <div className="form-group">
+                        <Label>מיקום במפעל</Label>
+                        <input className="input" type="text" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} placeholder="לדוגמה: קו 1, קו אריזה 2..." />
+                    </div>
+
+                    <div className="form-group">
+                        <Label>תיאור הבעיה</Label>
+                        <textarea className="input" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={4} placeholder="תאר את התקלה בפירוט — מה קרה, מתי התחיל, מה ניסית..." />
+                    </div>
+
+                    <div className="form-group">
+                        <Label>תמונות מהשטח (מומלץ, עד 3 תמונות)</Label>
+
+                        {form.images.length < 3 && (
+                            <button onClick={()=>fileRef.current.click()} style={{ padding:'12px', border:`1.5px dashed ${form.images.length>0?'var(--blue)':'var(--border)'}`, borderRadius:12, background: form.images.length>0?'var(--blue-pale)':'var(--bg)', color:form.images.length>0?'var(--blue)':'var(--muted)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontFamily:'Heebo', fontSize:14 }}>
+                                <Icon n="camera" />{form.images.length > 0 ? `הוסף תמונה (${form.images.length}/3)` : 'צלם תמונות / בחר קבצים'}
+                            </button>
+                        )}
+
+                        <input type="file" accept="image/*" multiple capture="environment" onChange={handleFiles} ref={fileRef} style={{display:'none'}} />
+
+                        {form.images.length > 0 && (
+                            <div style={{ marginTop:10, display:'flex', gap:12, flexWrap:'wrap' }}>
+                                {form.images.map((img, idx) => (
+                                    <div key={idx} style={{ position:'relative', display:'inline-block' }}>
+                                        <img src={img} style={{ width:72, height:72, objectFit:'cover', borderRadius:10, border:'2px solid var(--green-border)' }} alt="" />
+                                        <button onClick={()=>removeImage(idx)} className="btn btn-icon" style={{ position:'absolute', top:-6, right:-6, background:'var(--red)', color:'white', width:22, height:22, padding:0, borderRadius:'50%', fontSize:10, boxShadow:'0 2px 4px rgba(0,0,0,0.2)' }}>
+                                            <Icon n="times" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <button className="btn btn-blue btn-full btn-xl" onClick={submit} disabled={!form.location.trim()||!form.description.trim()}>
+                        <Icon n="paper-plane" />שלח קריאה
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ═══════════════ MY TICKETS ═══════════════
+    function MyTickets({ tickets, onEdit, onDelete, onNew, viewMode, setViewMode, onImageClick, user }) {
+        const [editing, setEditing] = useState(null);
+        const [sel, setSel] = useState(null);
+
+        return (
+            <div>
+                <div className="page-header">
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <h1 className="page-title">הקריאות שלי</h1>
+                        <span className="count-badge" style={{ background:'var(--blue-pale)', color:'var(--blue)' }}>{tickets.length}</span>
+                    </div>
+                    <div className="view-toggle">
+                        <button className={`view-btn ${viewMode==='grid'?'active':''}`} onClick={()=>setViewMode('grid')} title="תצוגת אריחים"><Icon n="th-large" /></button>
+                        <button className={`view-btn ${viewMode==='list'?'active':''}`} onClick={()=>setViewMode('list')} title="תצוגת רשימה"><Icon n="list" /></button>
+                    </div>
+                </div>
+
+                {tickets.length === 0 ? (
+                    <div className="empty-state">
+                        <Icon n="clipboard-list" cls="empty-icon" />
+                        <div className="empty-title">אין קריאות עדיין</div>
+                        <div className="empty-sub">לחץ על "קריאה חדשה" כדי לפתוח את הראשונה</div>
+                        <button className="btn btn-blue btn-md" style={{ marginTop:16 }} onClick={onNew}><Icon n="plus" />פתח קריאה</button>
+                    </div>
+                ) : viewMode === 'list' ? (
+                    <UnifiedTicketTable tickets={tickets} onRowClick={setSel} />
+                ) : (
+                    <div className="tickets-grid tickets-grid-2">
+                        {tickets.map(t => {
+                            const thumb = t.images?.[0] || t.image;
+                            return (
+                                <div key={t.id} className={`ticket-card${t.priority==='דחופה'?' urgent':''}`} onClick={()=>setSel(t)} style={{cursor:'pointer'}}>
+                                    <div style={{ display:'flex', gap:10 }}>
+                                        {thumb && <img src={thumb} onClick={(e) => { e.stopPropagation(); onImageClick(thumb); }} style={{ width:56, height:56, objectFit:'cover', borderRadius:10, flexShrink:0, border:'1.5px solid var(--border)', cursor:'zoom-in' }} alt="" />}
+                                        <div style={{ flex:1, minWidth:0 }}>
+                                            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+                                                <code style={{ fontSize:14, fontWeight:800, color:'var(--text)', border:'1px solid var(--border-strong)', background:'var(--surface)', padding:'2px 8px', borderRadius:6 }}>{t.id}</code>
+                                                <div style={{ display:'flex', gap:5 }}>
+                                                    {t.status===S.OPEN && <button className="btn btn-icon btn-sm" onClick={(e)=>{e.stopPropagation();setEditing(t);}} title="עריכה"><Icon n="edit" /></button>}
+                                                    {user?.role==='manager' && <button className="btn btn-icon btn-sm" onClick={(e)=>{e.stopPropagation();if(confirm('למחוק?'))onDelete(t.id);}} title="מחיקה" style={{ color:'var(--red)' }}><Icon n="trash" /></button>}
+                                                </div>
+                                            </div>
+                                            <div style={{ fontWeight:700, fontSize:15, marginBottom:5 }}>{t.location}</div>
+                                            <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:6 }}><SBadge s={t.status} /><PBadge p={t.priority} /></div>
+                                            <p style={{ color:'var(--muted)', fontSize:13, lineHeight:1.5, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{t.description}</p>
+                                            {t.assignedToName && <div className="info-row" style={{ marginTop:6 }}><Icon n="user-check" style={{ color:'var(--blue)' }} /><span style={{ color:'var(--blue)' }}>מטופל ע"י {t.assignedToName}</span></div>}
+                                            {t.workDescription && <div className="section-box section-box-green" style={{ marginTop:8, fontSize:13 }}><Icon n="check" style={{ marginLeft:6, color:'var(--green)' }} />{t.workDescription}</div>}
+                                            {t.vendorName && <div className="section-box section-box-teal" style={{ marginTop:8, fontSize:13 }}><Icon n="truck" style={{ marginLeft:6, color:'var(--teal)' }} />ספק: <strong>{t.vendorName}</strong></div>}
+                                            {t.managerNotes?.length>0 && <div style={{ marginTop:6, background:'var(--purple-pale)', borderRadius:8, padding:'5px 10px', fontSize:12, color:'var(--purple)' }}><Icon n="comment-dots" /> {t.managerNotes.length} הערות מנהל</div>}
+                                            <div style={{ fontSize:11, color:'var(--subtle)', marginTop:6 }}>{t.date}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+                {editing && <EditModal ticket={editing} onSave={(id,d)=>{onEdit(id,d);setEditing(null);}} onClose={()=>setEditing(null)} user={user} />}
+                {sel && <TicketModal ticket={sel} onClose={()=>setSel(null)} onImageClick={onImageClick} onDelete={user?.role==='manager'?onDelete:null} onEdit={sel.status===S.OPEN?()=>{setEditing(sel);setSel(null);}:null} user={user} editTicket={onEdit} />}
+            </div>
+        );
+    }
+
+    function EditModal({ ticket, onSave, onClose, user }) {
+        const WORKERS = ['שי', 'אלי', 'עוזי'];
+        const [f, setF] = useState({
+            description: ticket.description,
+            location: ticket.location,
+            priority: ticket.priority,
+            assignedToName: ticket.assignedToName || ''
+        });
+
+        const handleSave = () => {
+            const updates = { ...f };
+            if (f.assignedToName && !ticket.assignedToName && ticket.status === S.OPEN) {
+                updates.status = S.TAKEN;
+                updates.takenDate = new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'});
+            } else if (!f.assignedToName && ticket.status === S.TAKEN) {
+                updates.status = S.OPEN;
+                updates.takenDate = '';
+            }
+            onSave(ticket.id, updates);
+        };
+
+        return (
+            <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+                <div className="modal-box">
+                    <div className="modal-handle" />
+                    <div className="modal-header">
+                        <div><div style={{ fontWeight:800, fontSize:18 }}>עריכת קריאה</div><div style={{ marginTop:6 }}><code style={{ fontSize:14, fontWeight:800, color:'var(--text)', border:'1px solid var(--border-strong)', background:'var(--surface)', padding:'2px 8px', borderRadius:6 }}>{ticket.id}</code></div></div>
+                        <button className="btn btn-icon" onClick={onClose}><Icon n="times" /></button>
+                    </div>
+                    <div className="modal-body">
+                        <div className="form-group"><Label>מיקום</Label><input className="input" value={f.location} onChange={e=>setF({...f,location:e.target.value})} /></div>
+
+                        {user?.role === 'manager' && (
+                            <>
+                                <div className="form-group"><Label>דחיפות</Label>
+                                    <div className="priority-group">{[{v:'נמוכה',c:'#64748b'},{v:'רגילה',c:'var(--blue)'},{v:'דחופה',c:'var(--red)'}].map(({v,c})=><button key={v} className="priority-btn" onClick={()=>setF({...f,priority:v})} style={{ borderColor:f.priority===v?c:'var(--border)', color:f.priority===v?c:'var(--muted)' }}>{v}</button>)}</div>
+                                </div>
+                                <div className="form-group"><Label>שיוך לאיש אחזקה</Label>
+                                    <select className="input" value={f.assignedToName} onChange={e=>setF({...f,assignedToName:e.target.value})}>
+                                        <option value="">ללא שיוך (פתוחה)</option>
+                                        {WORKERS.map(w => <option key={w} value={w}>{w}</option>)}
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="form-group"><Label>תיאור</Label><textarea className="input" value={f.description} onChange={e=>setF({...f,description:e.target.value})} rows={3} /></div>
+                        <button className="btn btn-orange btn-full btn-lg" onClick={handleSave}>שמור שינויים</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ═══════════════ TICKET CARD (worker grid view) ═══════════════
+    function WorkerCard({ ticket, user, editTicket, showTake, onImageClick }) {
+        const [wdesc, setWdesc] = useState(ticket.workDescription||'');
+        const [vendor, setVendor] = useState(ticket.vendorName||'');
+        const [vendorMode, setVendorMode] = useState(false);
+        const mine = ticket.assignedTo === user.username || ticket.assignedToName === user.name;
+        const thumb = ticket.images?.[0] || ticket.image;
+
+        const take = (e) => { e.stopPropagation(); editTicket(ticket.id, { status:S.TAKEN, assignedTo:user.username, assignedToName:user.name, takenDate:new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}) }); };
+        const close = (e) => { e.stopPropagation(); if(!wdesc.trim()){alert('יש לכתוב מה בוצע');return;} editTicket(ticket.id,{status:S.DONE,workDescription:wdesc,closedDate:new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})}); };
+        const closeVendor = (e) => { e.stopPropagation(); if(!vendor.trim()){alert('יש לכתוב שם ספק');return;} if(!wdesc.trim()){alert('יש לכתוב מה הועבר');return;} editTicket(ticket.id,{status:S.VENDOR,vendorName:vendor,workDescription:wdesc}); };
+
+        return (
+            <div className={`ticket-card${ticket.priority==='דחופה'?' urgent':''}`}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+                    <code style={{ fontSize:14, fontWeight:800, color:'var(--text)', border:'1px solid var(--border-strong)', background:'var(--surface)', padding:'2px 8px', borderRadius:6 }}>{ticket.id}</code>
+                    <div style={{ display:'flex', gap:5 }}><PBadge p={ticket.priority} /><SBadge s={ticket.status} /></div>
+                </div>
+
+                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'rgba(59,130,246,0.06)', borderRadius:10, marginBottom:10 }}>
+                    <Icon n="map-marker-alt" style={{ color:'var(--blue)' }} />
+                    <strong style={{ fontSize:15 }}>{ticket.location}</strong>
+                    <span style={{ fontSize:12, color:'var(--muted)', marginRight:'auto' }}>ע"י {ticket.openedByName}</span>
+                </div>
+
+                <p style={{ color:'var(--muted)', fontSize:14, lineHeight:1.6, marginBottom:10 }}>{ticket.description}</p>
+
+                {ticket.assignedToName && <div style={{ marginBottom:8 }}><span className="assigned-badge"><Icon n="user-check" />{ticket.assignedToName}</span>{ticket.takenDate && <span style={{ fontSize:11, color:'var(--subtle)', marginRight:6 }}>{ticket.takenDate}</span>}</div>}
+
+                {ticket.tags?.length>0 && <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>{ticket.tags.map(t=><span key={t} style={{ background:'var(--bg)', color:'var(--muted)', fontSize:12, padding:'3px 10px', borderRadius:99, border:'1px solid var(--border)' }}>{t}</span>)}</div>}
+
+                {ticket.managerNotes?.length>0 && (
+                    <div className="section-box section-box-purple" style={{ marginBottom:10 }}>
+                        <div style={{ fontWeight:700, fontSize:12, color:'var(--purple)', marginBottom:6 }}>הערות מנהל:</div>
+                        {ticket.managerNotes.map(n=><div key={n.id} style={{ fontSize:13, color:'#4c1d95', marginBottom:4 }}><span style={{ fontSize:10, display:'block', color:'var(--purple)' }}>{n.date}{n.by&&` — ${n.by}`}</span>{n.text}</div>)}
+                    </div>
+                )}
+
+                {thumb && <img src={thumb} onClick={(e) => { e.stopPropagation(); onImageClick(thumb); }} style={{ width:'100%', maxHeight:250, objectFit:'contain', borderRadius:10, marginBottom:10, border:'1px solid var(--border)', background:'var(--bg)', cursor:'zoom-in' }} alt="" />}
+
+                {/* TAKE BUTTON */}
+                {showTake && (
+                    <button className="btn btn-orange btn-full btn-lg" onClick={take}><Icon n="hand-paper" />אני מטפל/ת בזה</button>
+                )}
+
+                {/* ACTION ZONE for assigned worker */}
+                {mine && (ticket.status===S.TAKEN || ticket.status===S.VENDOR) && (
+                    <div className="action-zone" onClick={e=>e.stopPropagation()}>
+                        <div className="form-group">
+                            <Label><Icon n="clipboard-check" style={{ marginLeft:6 }} />מה בוצע?</Label>
+                            <textarea className="input" value={wdesc} onChange={e=>setWdesc(e.target.value)} rows={3} placeholder="תאר את הטיפול שבוצע..." />
+                        </div>
+
+                        {ticket.status===S.TAKEN && vendorMode && (
+                            <div className="form-group">
+                                <Label><Icon n="truck" style={{ marginLeft:6, color:'var(--teal)' }} />שם הספק החיצוני</Label>
+                                <input className="input" value={vendor} onChange={e=>setVendor(e.target.value)} placeholder="לדוגמה: מיזוג-טק, אינסטל בע״מ" />
+                            </div>
+                        )}
+
+                        <div style={{ display:'flex', gap:8 }}>
+                            <button className="btn btn-green btn-full btn-lg" onClick={close}><Icon n="check-circle" />טופלה</button>
+                            {ticket.status===S.TAKEN && !vendorMode && (
+                                <button className="btn btn-teal btn-full btn-lg" onClick={(e)=>{e.stopPropagation();setVendorMode(true);}}><Icon n="truck" />הועבר לספק</button>
+                            )}
+                            {ticket.status===S.TAKEN && vendorMode && (
+                                <button className="btn btn-teal btn-full btn-lg" onClick={closeVendor}><Icon n="check" />אשר ספק</button>
+                            )}
+                        </div>
+                        {ticket.status===S.TAKEN && vendorMode && <button onClick={(e)=>{e.stopPropagation();setVendorMode(false);}} style={{ fontSize:12, color:'var(--muted)', background:'transparent', border:'none', cursor:'pointer', fontFamily:'Heebo', textAlign:'center', padding:'4px' }}>ביטול</button>}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    function WorkerOpen({ tickets, ...ctx }) {
+        const [sel, setSel] = useState(null);
+        return (
+            <div>
+                <div className="page-header">
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <h1 className="page-title">קריאות פתוחות</h1>
+                        <span className="count-badge" style={{ background:'var(--red-pale)', color:'var(--red)' }}>{tickets.length}</span>
+                    </div>
+                    <div className="view-toggle">
+                        <button className={`view-btn ${ctx.viewMode==='grid'?'active':''}`} onClick={()=>ctx.setViewMode('grid')} title="תצוגת אריחים"><Icon n="th-large" /></button>
+                        <button className={`view-btn ${ctx.viewMode==='list'?'active':''}`} onClick={()=>ctx.setViewMode('list')} title="תצוגת רשימה"><Icon n="list" /></button>
+                    </div>
+                </div>
+                {tickets.length===0
+                    ? <div className="empty-state"><Icon n="check-circle" cls="empty-icon" style={{ color:'#86efac' }} /><div className="empty-title">אין קריאות פתוחות</div><div className="empty-sub">עבודה מצוינת! 🎉</div></div>
+                    : ctx.viewMode === 'list' ? (
+                        <UnifiedTicketTable tickets={tickets} onRowClick={setSel} />
+                    ) : (
+                        <div className="tickets-grid tickets-grid-2">
+                            {tickets.map(t=>(
+                                <div key={t.id} onClick={()=>setSel(t)} style={{cursor:'pointer'}}>
+                                    <WorkerCard ticket={t} user={ctx.user} editTicket={ctx.editTicket} showTake={true} onImageClick={ctx.onImageClick} />
+                                </div>
+                            ))}
+                        </div>
+                    )
+                }
+                {sel && <TicketModal ticket={sel} onClose={()=>setSel(null)} onImageClick={ctx.onImageClick} user={ctx.user} editTicket={ctx.editTicket} />}
+            </div>
+        );
+    }
+
+    function WorkerMine({ tickets, ...ctx }) {
+        const [sel, setSel] = useState(null);
+        return (
+            <div>
+                <div className="page-header">
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <h1 className="page-title">הקריאות שלקחתי</h1>
+                        <span className="count-badge" style={{ background:'var(--orange-pale)', color:'var(--orange)' }}>{tickets.length}</span>
+                    </div>
+                    <div className="view-toggle">
+                        <button className={`view-btn ${ctx.viewMode==='grid'?'active':''}`} onClick={()=>ctx.setViewMode('grid')} title="תצוגת אריחים"><Icon n="th-large" /></button>
+                        <button className={`view-btn ${ctx.viewMode==='list'?'active':''}`} onClick={()=>ctx.setViewMode('list')} title="תצוגת רשימה"><Icon n="list" /></button>
+                    </div>
+                </div>
+                {tickets.length===0
+                    ? <div className="empty-state"><Icon n="inbox" cls="empty-icon" /><div className="empty-title">לא לקחת קריאות</div><div className="empty-sub">עבור לקריאות פתוחות כדי לקחת אחת</div></div>
+                    : ctx.viewMode === 'list' ? (
+                        <UnifiedTicketTable tickets={tickets} onRowClick={setSel} />
+                    ) : (
+                        <div className="tickets-grid tickets-grid-2">
+                            {tickets.map(t=>(
+                                <div key={t.id} onClick={()=>setSel(t)} style={{cursor:'pointer'}}>
+                                    <WorkerCard ticket={t} user={ctx.user} editTicket={ctx.editTicket} showTake={false} onImageClick={ctx.onImageClick} />
+                                </div>
+                            ))}
+                        </div>
+                    )
+                }
+                {sel && <TicketModal ticket={sel} onClose={()=>setSel(null)} onImageClick={ctx.onImageClick} user={ctx.user} editTicket={ctx.editTicket} />}
+            </div>
+        );
+    }
+
+    // ═══════════════ ALL TICKETS ═══════════════
+    function AllTickets({ tickets, isManager, editTicket, delTicket, addNote, toggleTag, user, viewMode, setViewMode, onImageClick }) {
+        const [search, setSearch] = useState('');
+        const [filter, setFilter] = useState('הכל');
+        const [sel, setSel] = useState(null);
+        const [editing, setEditing] = useState(null);
+
+        const filtered = tickets.filter(t => {
+            const ms = !search || [t.id,t.location,t.description,t.openedByName,t.assignedToName].some(v=>v?.toLowerCase().includes(search.toLowerCase()));
+            return ms && (filter==='הכל'||t.status===filter);
+        });
+
+        const handleNote = (id,text) => { addNote(id,text); setSel(p=>({...p,managerNotes:[...(p.managerNotes||[]),{id:Date.now(),text,date:new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}),by:user.name}]})); };
+        const handleTag = (id,tag) => { toggleTag(id,tag); setSel(p=>{const c=p.tags||[];return{...p,tags:c.includes(tag)?c.filter(x=>x!==tag):[...c,tag]};}); };
+
+        return (
+            <div>
+                <div className="page-header">
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <h1 className="page-title">כל הקריאות</h1>
+                        <span className="count-badge" style={{ background:'var(--bg)', color:'var(--muted)' }}>{filtered.length}</span>
+                    </div>
+                    <div className="view-toggle">
+                        <button className={`view-btn ${viewMode==='grid'?'active':''}`} onClick={()=>setViewMode('grid')} title="תצוגת אריחים"><Icon n="th-large" /></button>
+                        <button className={`view-btn ${viewMode==='list'?'active':''}`} onClick={()=>setViewMode('list')} title="תצוגת רשימה"><Icon n="list" /></button>
+                    </div>
+                </div>
+
+                <div className="filter-bar">
+                    <div className="search-wrap"><Icon n="search" /><input className="input" value={search} onChange={e=>setSearch(e.target.value)} placeholder="חיפוש..." /></div>
+                    <div className="filter-pills">
+                        {['הכל',S.OPEN,S.TAKEN,S.DONE,S.VENDOR].map(s=>(
+                            <button key={s} className={`filter-pill${filter===s?' active':''}`} onClick={()=>setFilter(s)}>{s}</button>
+                        ))}
+                    </div>
+                </div>
+
+                {filtered.length===0 ? (
+                    <div className="empty-state"><div className="empty-title">לא נמצאו קריאות</div></div>
+                ) : viewMode === 'list' ? (
+                    <UnifiedTicketTable tickets={filtered} onRowClick={setSel} />
+                ) : (
+                    <div className="tickets-grid tickets-grid-2">
+                        {filtered.map(t=>{
+                            const thumb = t.images?.[0] || t.image;
+                            return (
+                                <div key={t.id} className="ticket-card" style={{cursor:'pointer'}} onClick={()=>setSel(t)}>
+                                    <div style={{display:'flex',gap:10}}>
+                                        {thumb && <img src={thumb} onClick={(e)=>{e.stopPropagation();onImageClick(thumb);}} style={{width:50,height:50,objectFit:'cover',borderRadius:10,flexShrink:0,cursor:'zoom-in'}} alt=""/>}
+                                        <div style={{flex:1,minWidth:0}}>
+                                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><code style={{ fontSize:14, fontWeight:800, color:'var(--text)', border:'1px solid var(--border-strong)', background:'var(--surface)', padding:'2px 8px', borderRadius:6 }}>{t.id}</code><SBadge s={t.status}/></div>
+                                            <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{t.location}</div>
+                                            <div style={{display:'flex',gap:5,flexWrap:'wrap'}}><PBadge p={t.priority}/>{t.assignedToName&&<span style={{fontSize:11,color:'var(--blue)',background:'var(--blue-pale)',padding:'2px 8px',borderRadius:99}}>{t.assignedToName}</span>}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {sel && <TicketModal ticket={sel} onClose={()=>setSel(null)} onNote={isManager?handleNote:null} onTag={isManager?handleTag:null} onReopen={isManager?(id)=>{editTicket(id,{status:S.OPEN,assignedTo:'',assignedToName:''});setSel(p=>({...p,status:S.OPEN}));}:null} onImageClick={onImageClick} onDelete={isManager?delTicket:null} onEdit={isManager?()=>{setEditing(sel);setSel(null);}:null} user={user} editTicket={editTicket} />}
+                {editing && <EditModal ticket={editing} onSave={(id,d)=>{editTicket(id,d);setEditing(null);}} onClose={()=>setEditing(null)} user={user} />}
+            </div>
+        );
+    }
+
+    // ═══════════════ TICKET DETAIL MODAL ═══════════════
+    function TicketModal({ ticket, onClose, onNote, onTag, onReopen, onImageClick, onDelete, onEdit, user, editTicket }) {
+        const [noteText, setNoteText] = useState('');
+        const displayImages = ticket.images?.length > 0 ? ticket.images : (ticket.image ? [ticket.image] : []);
+
+        const [wdesc, setWdesc] = useState(ticket.workDescription||'');
+        const [vendor, setVendor] = useState(ticket.vendorName||'');
+        const [vendorMode, setVendorMode] = useState(false);
+
+        const handleTake = () => { editTicket(ticket.id, { status:S.TAKEN, assignedTo:user.username, assignedToName:user.name, takenDate:new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}) }); onClose(); };
+        const handleClose = () => { if(!wdesc.trim()){alert('יש לכתוב מה בוצע');return;} editTicket(ticket.id,{status:S.DONE,workDescription:wdesc,closedDate:new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})}); onClose(); };
+        const handleVendor = () => { if(!vendor.trim()){alert('יש לכתוב שם ספק');return;} if(!wdesc.trim()){alert('יש לכתוב מה הועבר');return;} editTicket(ticket.id,{status:S.VENDOR,vendorName:vendor,workDescription:wdesc}); onClose(); };
+
+        const isMineWorker = user?.role === 'worker' && (ticket.assignedTo === user?.username || ticket.assignedToName === user?.name) && (ticket.status === S.TAKEN || ticket.status === S.VENDOR);
+        const isOpenWorker = user?.role === 'worker' && ticket.status === S.OPEN;
+
+        return (
+            <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+                <div className="modal-box">
+                    <div className="modal-handle" />
+                    <div className="modal-header">
+                        <div>
+                            <div style={{fontWeight:800,fontSize:18}}>{ticket.location}</div>
+                            <div style={{marginTop:8, display:'flex', alignItems:'center', gap:8}}><code style={{ fontSize:15, fontWeight:800, color:'var(--text)', border:'1px solid var(--border-strong)', background:'var(--surface)', padding:'2px 8px', borderRadius:6 }}>{ticket.id}</code> <span style={{fontSize:13,color:'var(--muted)'}}>{ticket.date}</span></div>
+                        </div>
+                        <div style={{display:'flex',gap:8}}>
+                            {onEdit && (
+                                <button className="btn btn-ghost btn-sm" onClick={onEdit}><Icon n="edit" />ערוך</button>
+                            )}
+                            {onDelete && (
+                                <button className="btn btn-ghost btn-sm" style={{color:'var(--red)'}} onClick={()=>{if(confirm('למחוק את הקריאה?')){onDelete(ticket.id);onClose();}}}><Icon n="trash" />מחק</button>
+                            )}
+                            {onReopen && (ticket.status===S.DONE||ticket.status===S.VENDOR) && (
+                                <button className="btn btn-ghost btn-sm" onClick={()=>onReopen(ticket.id)}><Icon n="sync-alt" />פתח מחדש</button>
+                            )}
+                            <button className="btn btn-icon" onClick={onClose}><Icon n="times" /></button>
+                        </div>
+                    </div>
+                    <div className="modal-body">
+                        {/* Status row */}
+                        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}><SBadge s={ticket.status}/><PBadge p={ticket.priority}/></div>
+
+                        {/* Description */}
+                        <div className="section-box section-box-gray">
+                            <p style={{fontSize:14,lineHeight:1.7,color:'var(--text-2)'}}>{ticket.description}</p>
+                        </div>
+
+                        {/* People */}
+                        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                            {ticket.openedByName && <div className="info-row"><Icon n="user" /><span>נפתח ע"י <strong>{ticket.openedByName}</strong></span></div>}
+                            {ticket.assignedToName && <div className="info-row"><Icon n="user-check" style={{color:'var(--blue)'}} /><span style={{color:'var(--blue)'}}>טיפל: <strong>{ticket.assignedToName}</strong>{ticket.takenDate&&` (${ticket.takenDate})`}</span></div>}
+                        </div>
+
+                        {/* Work done */}
+                        {ticket.workDescription && (
+                            <div className="section-box section-box-green">
+                                <div style={{fontWeight:700,fontSize:12,color:'var(--green)',marginBottom:5}}><Icon n="clipboard-check" style={{marginLeft:6}}/>מה בוצע</div>
+                                <p style={{fontSize:14,color:'#166534'}}>{ticket.workDescription}</p>
+                                {ticket.closedDate && <div style={{fontSize:11,color:'var(--subtle)',marginTop:4}}>נסגר: {ticket.closedDate}</div>}
+                            </div>
+                        )}
+
+                        {/* Vendor */}
+                        {ticket.vendorName && (
+                            <div className="section-box section-box-teal">
+                                <div style={{fontWeight:700,fontSize:12,color:'var(--teal)',marginBottom:4}}><Icon n="truck" style={{marginLeft:6}}/>הועבר לספק</div>
+                                <div style={{fontSize:16,fontWeight:800,color:'#0f766e'}}>{ticket.vendorName}</div>
+                            </div>
+                        )}
+
+                        {/* Worker Actions inside Modal */}
+                        {isOpenWorker && (
+                            <button className="btn btn-orange btn-full btn-lg" onClick={handleTake} style={{marginTop: 10}}><Icon n="hand-paper" />אני מטפל/ת בזה</button>
+                        )}
+
+                        {isMineWorker && (
+                            <div className="action-zone" style={{ borderTop: '2px dashed var(--border)', marginTop: 14, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <div className="form-group">
+                                    <Label><Icon n="clipboard-check" style={{ marginLeft:6 }} />מה בוצע?</Label>
+                                    <textarea className="input" value={wdesc} onChange={e=>setWdesc(e.target.value)} rows={3} placeholder="תאר את הטיפול שבוצע..." />
+                                </div>
+
+                                {ticket.status===S.TAKEN && vendorMode && (
+                                    <div className="form-group">
+                                        <Label><Icon n="truck" style={{ marginLeft:6, color:'var(--teal)' }} />שם הספק החיצוני</Label>
+                                        <input className="input" value={vendor} onChange={e=>setVendor(e.target.value)} placeholder="לדוגמה: מיזוג-טק, אינסטל בע״מ" />
+                                    </div>
+                                )}
+
+                                <div style={{ display:'flex', gap:8 }}>
+                                    <button className="btn btn-green btn-full btn-lg" onClick={handleClose}><Icon n="check-circle" />טופלה</button>
+                                    {ticket.status===S.TAKEN && !vendorMode && (
+                                        <button className="btn btn-teal btn-full btn-lg" onClick={()=>setVendorMode(true)}><Icon n="truck" />הועבר לספק</button>
+                                    )}
+                                    {ticket.status===S.TAKEN && vendorMode && (
+                                        <button className="btn btn-teal btn-full btn-lg" onClick={handleVendor}><Icon n="check" />אשר ספק</button>
+                                    )}
+                                </div>
+                                {ticket.status===S.TAKEN && vendorMode && <button onClick={()=>setVendorMode(false)} style={{ fontSize:12, color:'var(--muted)', background:'transparent', border:'none', cursor:'pointer', fontFamily:'Heebo', textAlign:'center', padding:'4px' }}>ביטול</button>}
+                            </div>
+                        )}
+
+                        {/* Tags */}
+                        {onTag && (
+                            <div>
+                                <div style={{fontWeight:700,fontSize:14,marginBottom:8,display:'flex',alignItems:'center',gap:6,marginTop:10}}><Icon n="tags" style={{color:'var(--purple)'}}/>תיוג</div>
+                                <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
+                                    {AVAILABLE_TAGS.map(tag=>{const a=ticket.tags?.includes(tag);return<button key={tag} className="tag-btn" onClick={()=>onTag(ticket.id,tag)} style={{borderColor:a?'var(--purple)':'var(--border)',background:a?'var(--purple)':'var(--surface)',color:a?'white':'var(--muted)',fontFamily:'Heebo'}}>{tag}</button>;})}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Notes */}
+                        {onNote && (
+                            <div>
+                                <div style={{fontWeight:700,fontSize:14,marginBottom:8,display:'flex',alignItems:'center',gap:6,marginTop:10}}><Icon n="comment-dots" style={{color:'var(--purple)'}}/>הערות פנימיות</div>
+                                {ticket.managerNotes?.length>0 && <div className="notes-list" style={{marginBottom:10}}>{ticket.managerNotes.map(n=><div key={n.id} className="note-item"><div className="note-meta">{n.date}{n.by&&` — ${n.by}`}</div><div className="note-text">{n.text}</div></div>)}</div>}
+                                <textarea className="input" value={noteText} onChange={e=>setNoteText(e.target.value)} rows={3} placeholder="הוסף הערה לאיש האחזקה..." style={{marginBottom:8}} />
+                                <button className="btn btn-full btn-lg" onClick={()=>{if(noteText.trim()){onNote(ticket.id,noteText);setNoteText('');}}} disabled={!noteText.trim()} style={{background:noteText.trim()?'var(--purple)':'var(--purple-border)',color:'white'}}>שמור הערה</button>
+                            </div>
+                        )}
+
+                        {/* Images */}
+                        {displayImages.length > 0 && <div>
+                            <div style={{fontWeight:700,fontSize:14,marginBottom:8,display:'flex',alignItems:'center',gap:6,marginTop:10}}><Icon n="camera" style={{color:'var(--purple)'}}/>תמונות מהשטח</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                {displayImages.map((img, idx) => (
+                                    <img key={idx} src={img} onClick={() => onImageClick(img)} style={{width:'100%',maxHeight:300,objectFit:'contain',borderRadius:12,border:'1px solid var(--border)',background:'var(--bg)', cursor:'zoom-in'}} alt="" />
+                                ))}
+                            </div>
+                        </div>}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ═══════════════ DASHBOARD ═══════════════
+    function Dashboard({ tickets }) {
+        const stats = [
+            {l:'סה״כ',    c:tickets.length,                              i:'list',             bg:'var(--blue-pale)',   clr:'var(--blue)',   ic:'var(--blue)'},
+            {l:'פתוחות',  c:tickets.filter(t=>t.status===S.OPEN).length, i:'exclamation-circle',bg:'var(--red-pale)',  clr:'var(--red)',    ic:'var(--red)'},
+            {l:'בטיפול',  c:tickets.filter(t=>t.status===S.TAKEN).length,i:'tools',            bg:'var(--orange-pale)', clr:'var(--orange)', ic:'var(--orange)'},
+            {l:'טופלו',   c:tickets.filter(t=>t.status===S.DONE).length, i:'check-circle',     bg:'var(--green-pale)',  clr:'var(--green)',  ic:'var(--green)'},
+            {l:'לספק',    c:tickets.filter(t=>t.status===S.VENDOR).length,i:'truck',            bg:'var(--teal-pale)',  clr:'var(--teal)',   ic:'var(--teal)'},
+        ];
+        const urgent = tickets.filter(t=>t.priority==='דחופה'&&t.status===S.OPEN);
+        const workerMap = {};
+        tickets.forEach(t => {
+            if (!t.assignedToName) return;
+            if (!workerMap[t.assignedToName]) workerMap[t.assignedToName] = { taken:0, done:0, vendor:0 };
+            if (t.status===S.TAKEN)  workerMap[t.assignedToName].taken++;
+            if (t.status===S.DONE)   workerMap[t.assignedToName].done++;
+            if (t.status===S.VENDOR) workerMap[t.assignedToName].vendor++;
+        });
+
+        return (
+            <div style={{display:'flex',flexDirection:'column',gap:20}}>
+                <div className="page-header"><h1 className="page-title">דשבורד ניהול</h1></div>
+
+                <div className="stat-grid">
+                    {stats.map(s=>(
+                        <div key={s.l} className="stat-card" style={{background:s.bg}}>
+                            <div className="stat-icon" style={{background:s.ic}}><Icon n={s.i} /></div>
+                            <div><div className="stat-label">{s.l}</div><div className="stat-count" style={{color:s.clr}}>{s.c}</div></div>
+                        </div>
+                    ))}
+                </div>
+
+                {urgent.length>0 && (
+                    <div className="card" style={{borderColor:'var(--red-border)',overflow:'hidden'}}>
+                        <div style={{background:'var(--red-pale)',padding:'12px 18px',borderBottom:'1px solid var(--red-border)',fontWeight:700,color:'var(--red)',display:'flex',alignItems:'center',gap:8}}>
+                            <Icon n="exclamation-triangle"/>{urgent.length} קריאות דחופות ממתינות
+                        </div>
+                        <div style={{padding:16,display:'flex',flexDirection:'column',gap:8}}>
+                            {urgent.map(t=>(
+                                <div key={t.id} style={{background:'var(--surface)',borderRadius:10,padding:'10px 14px',border:'1px solid var(--red-border)'}}>
+                                    <div style={{fontWeight:700}}>{t.location}</div>
+                                    <div style={{fontSize:13,color:'var(--muted)',marginTop:2}}>{t.description}</div>
+                                    <div style={{marginTop:6, display:'flex', alignItems:'center', gap:6}}><code style={{ fontSize:13, fontWeight:800, color:'var(--text)', border:'1px solid var(--border-strong)', background:'var(--surface)', padding:'2px 6px', borderRadius:4 }}>{t.id}</code> <span style={{fontSize:12,color:'var(--subtle)'}}>{t.date}</span></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {Object.keys(workerMap).length>0 && (
+                    <div className="card">
+                        <div style={{padding:'14px 18px',borderBottom:'1px solid var(--border)',fontWeight:700,fontSize:16,display:'flex',alignItems:'center',gap:8}}>
+                            <Icon n="users" style={{color:'var(--orange)'}}/>סטטיסטיקת אנשי אחזקה
+                        </div>
+                        <div style={{padding:12,display:'flex',flexDirection:'column',gap:8}}>
+                            {Object.entries(workerMap).map(([name,s])=>(
+                                <div key={name} className="worker-row">
+                                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                                        <div className="worker-avatar" style={{background:'var(--orange)'}}>{name.charAt(0)}</div>
+                                        <span style={{fontWeight:600}}>{name}</span>
+                                    </div>
+                                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                                        {s.taken>0&&<span className="badge" style={{background:'var(--orange-pale)',color:'var(--orange)'}}>בטיפול: {s.taken}</span>}
+                                        {s.done>0&&<span className="badge" style={{background:'var(--green-pale)',color:'var(--green)'}}>טיפל: {s.done}</span>}
+                                        {s.vendor>0&&<span className="badge" style={{background:'var(--teal-pale)',color:'var(--teal)'}}>ספק: {s.vendor}</span>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ═══════════════ USERS MANAGER ═══════════════
+    function UsersManager() {
+        const [users, setUsers] = useState([]); const [load, setLoad] = useState(true);
+        const [showAdd, setShowAdd] = useState(false); const [editU, setEditU] = useState(null);
+        const [newU, setNewU] = useState({username:'',password:'',name:'',role:'requester'});
+        const [saving, setSaving] = useState(false); const [msg, setMsg] = useState('');
+
+        const RC = { requester:{c:'var(--blue)',bg:'var(--blue-pale)'}, worker:{c:'var(--orange)',bg:'var(--orange-pale)'}, manager:{c:'var(--purple)',bg:'var(--purple-pale)'} };
+        const RL = { requester:'עובד ייצור', worker:'איש אחזקה', manager:'מנהל' };
+
+        const load_ = async () => { setLoad(true); try{const r=await fetch(`${API_URL}?action=getUsers`);const d=await r.json();setUsers(d.users||[]);}catch{} setLoad(false); };
+        useEffect(()=>{load_();},[]);
+        const flash = m => { setMsg(m); setTimeout(()=>setMsg(''),3000); };
+
+        const save = async (action, data) => { setSaving(true); try{await fetch(API_URL,{method:'POST',body:JSON.stringify({action,user:data}),headers:{"Content-Type":"text/plain;charset=utf-8"},mode:'no-cors'});flash('✓ נשמר');setTimeout(()=>load_(),1500);}catch{flash('שגיאה');} setSaving(false); };
+        const del = async un => { if(!confirm(`למחוק ${un}?`))return; try{await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'deleteUser',username:un}),headers:{"Content-Type":"text/plain;charset=utf-8"},mode:'no-cors'});flash('✓ נמחק');setTimeout(()=>load_(),1500);}catch{flash('שגיאה');} };
+
+        const handleAdd = () => { if(!newU.username||!newU.password||!newU.name){flash('יש למלא הכל');return;} save('addUser',newU); setNewU({username:'',password:'',name:'',role:'requester'}); setShowAdd(false); };
+        const handleEdit = () => { if(!editU.name){flash('יש למלא שם');return;} save('deleteUser',editU); setTimeout(()=>save('addUser',editU),600); setEditU(null); };
+
+        const Fields = ({d,setD,isEdit}) => (
+            <div className="form-grid" style={{gap:14}}>
+                <div className="form-group"><Label>שם מלא</Label><input className="input" value={d.name} onChange={e=>setD({...d,name:e.target.value})} placeholder="ישראל ישראלי" /></div>
+                <div className="form-group">
+                    <Label>שם משתמש</Label>
+                    <input className="input" value={d.username} onChange={e=>setD({...d,username:e.target.value})} disabled={isEdit} style={{opacity:isEdit?0.6:1}} placeholder="israel1" autoComplete="off" />
+                    {isEdit&&<Hint>שם משתמש לא ניתן לשינוי</Hint>}
+                </div>
+                <div className="form-group"><Label>{isEdit?'סיסמה חדשה (ריק = ללא שינוי)':'סיסמה'}</Label><input className="input" type="password" value={d.password} onChange={e=>setD({...d,password:e.target.value})} placeholder={isEdit?'השאר ריק לאי-שינוי':'סיסמה ראשונית'} autoComplete="new-password" /></div>
+                <div className="form-group">
+                    <Label>תפקיד</Label>
+                    <div className="priority-group">
+                        {Object.entries(RL).map(([v,l])=><button key={v} className="priority-btn" onClick={()=>setD({...d,role:v})} style={{borderColor:d.role===v?RC[v].c:'var(--border)',background:d.role===v?RC[v].bg:'var(--surface)',color:d.role===v?RC[v].c:'var(--muted)',fontSize:13}}>{l}</button>)}
+                    </div>
+                </div>
+            </div>
+        );
+
+        return (
+            <div style={{maxWidth:720}}>
+                <div className="page-header">
+                    <h1 className="page-title">ניהול משתמשים</h1>
+                    <button className="btn btn-blue btn-md" onClick={()=>{setShowAdd(true);setEditU(null);}}><Icon n="plus"/>משתמש חדש</button>
+                </div>
+                {msg && <div className={`alert ${msg.startsWith('✓')?'alert-success':'alert-error'}`} style={{marginBottom:14}}>{msg}</div>}
+                {load
+                    ? <div style={{textAlign:'center',padding:48}}><Icon n="spinner" cls="spinner" style={{fontSize:28,color:'var(--muted)'}}/></div>
+                    : <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                        {users.map(u=>(
+                            <div key={u.username} className="user-row">
+                                <div style={{display:'flex',alignItems:'center',gap:14}}>
+                                    <div className="user-big-avatar" style={{background:RC[u.role]?.c||'var(--blue)'}}>{u.name?.charAt(0)||'?'}</div>
+                                    <div>
+                                        <div style={{fontWeight:700,fontSize:16}}>{u.name}</div>
+                                        <div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>@{u.username}</div>
+                                        <span className="badge" style={{background:RC[u.role]?.bg,color:RC[u.role]?.c,marginTop:4,display:'inline-flex'}}>{RL[u.role]||u.role}</span>
+                                    </div>
+                                </div>
+                                <div style={{display:'flex',gap:7}}>
+                                    <button className="btn btn-ghost btn-sm" onClick={()=>{setEditU({...u,password:''});setShowAdd(false);}}><Icon n="edit"/></button>
+                                    <button className="btn btn-danger btn-sm" onClick={()=>del(u.username)}><Icon n="trash"/></button>
+                                </div>
+                            </div>
+                        ))}
+                        {users.length===0&&<div className="empty-state"><div className="empty-title">אין משתמשים עדיין</div></div>}
+                    </div>
+                }
+
+                {showAdd && (
+                    <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)setShowAdd(false);}}>
+                        <div className="modal-box">
+                            <div className="modal-handle"/>
+                            <div className="modal-header"><div style={{fontWeight:800,fontSize:18}}>משתמש חדש</div><button className="btn btn-icon" onClick={()=>setShowAdd(false)}><Icon n="times"/></button></div>
+                            <div className="modal-body">
+                                <Fields d={newU} setD={setNewU} isEdit={false} />
+                                <button className="btn btn-blue btn-full btn-lg" onClick={handleAdd} disabled={saving}>{saving?<><Icon n="spinner" cls="spinner"/>שומר...</>:<><Icon n="user-plus"/>הוסף</>}</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {editU && (
+                    <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)setEditU(null);}}>
+                        <div className="modal-box">
+                            <div className="modal-handle"/>
+                            <div className="modal-header">
+                                <div><div style={{fontWeight:800,fontSize:18}}>עריכת משתמש</div><div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>@{editU.username}</div></div>
+                                <button className="btn btn-icon" onClick={()=>setEditU(null)}><Icon n="times"/></button>
+                            </div>
+                            <div className="modal-body">
+                                <Fields d={editU} setD={setEditU} isEdit={true} />
+                                <button className="btn btn-orange btn-full btn-lg" onClick={handleEdit} disabled={saving}>{saving?<><Icon n="spinner" cls="spinner"/>שומר...</>:<><Icon n="save"/>שמור</>}</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
