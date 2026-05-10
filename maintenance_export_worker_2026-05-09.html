@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>מערכת אחזקה</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --blue: #1d4ed8; --orange: #ea580c; --purple: #7c3aed;
+            --green: #16a34a; --red: #dc2626;
+            --bg: #f0f4f8; --surface: #ffffff;
+            --border: #e8edf2; --text: #0f172a; --muted: #64748b;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: 'Heebo', sans-serif; background: var(--bg); color: var(--text); direction: rtl; }
+        #root { height: 100%; display: flex; flex-direction: column; }
+
+        .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + var(--safe-bottom)); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; border-top: 1px solid var(--border);
+            display: flex; padding-bottom: var(--safe-bottom);
+            z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        }
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 10px 4px; border: none;
+            background: transparent; cursor: pointer; font-family: 'Heebo', sans-serif;
+            gap: 4px;
+        }
+        .nav-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; }
+        .nav-label { font-size: 11px; font-weight: 500; transition: color 0.15s; }
+        .nav-item.active .nav-icon { transform: scale(1.1); }
+
+        .input {
+            width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+            padding: 13px 14px; font-size: 16px; font-family: 'Heebo', sans-serif;
+            outline: none; background: #fafbfc; color: var(--text);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(29,78,216,0.1); background: white; }
+
+        .btn {
+            border: none; border-radius: 12px; font-family: 'Heebo', sans-serif;
+            font-weight: 700; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; gap: 8px; transition: all 0.15s; font-size: 15px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-blue { background: var(--blue); color: white; }
+        .btn-orange { background: var(--orange); color: white; }
+        .btn-green { background: var(--green); color: white; }
+        .btn-red { background: var(--red); color: white; }
+
+        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+        .card { background: white; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
+        .ticket-card { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 14px; }
+
+        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-sheet { background: white; width: 100%; max-height: 92vh; border-radius: 20px 20px 0 0; overflow-y: auto; -webkit-overflow-scrolling: touch; animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1); padding-bottom: calc(24px + var(--safe-bottom)); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: #e2e8f0; margin: 12px auto 0; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-card { border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 10px; }
+        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
+
+        .priority-btn { flex: 1; padding: 10px 6px; border-radius: 10px; border: 2px solid var(--border); background: white; font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center; }
+        .tag-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid; font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .pulse { animation: pulse 2s infinite; }
+
+        .app-header { background: white; border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+
+        /* Login */
+        .login-page { min-height: 100vh; background: linear-gradient(160deg, #eff6ff 0%, #f0f4f8 60%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; }
+        .login-box { width: 100%; max-width: 380px; background: white; border-radius: 20px; padding: 32px 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.1); border: 1px solid var(--border); }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 0.8s linear infinite; }
+
+        /* User badge */
+        .user-badge { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px 4px 6px; }
+        .user-avatar { width: 26px; height: 26px; border-radius: '50%'; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; border-radius: 50%; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwB9n9tXxHsV7pnFSUOzO8Pv39qeVm0huAqn2ar--TPY6eR7rGA5totXdlDRUE7aD-BDw/exec';
+    const AVAILABLE_TAGS = ['בטיחות', 'הוזמן חלק', 'ממתין לספק', 'חשמל', 'מכניקה', 'צנרת'];
+    const STORAGE_KEY = 'maintenance_user';
+
+    const Icon = ({ name, style, className }) => <i className={`fas fa-${name} ${className||''}`} style={style}></i>;
+    const generateId = () => 'TKT-' + Math.floor(1000 + Math.random() * 9000);
+
+    const ROLE_COLORS = {
+        requester: { color: '#1d4ed8', bg: '#eff6ff', label: 'עובד ייצור' },
+        worker:    { color: '#ea580c', bg: '#fff7ed', label: 'איש אחזקה' },
+        manager:   { color: '#7c3aed', bg: '#faf5ff', label: 'מנהל' },
+    };
+
+    function StatusBadge({ status }) {
+        const map = { 'פתוחה': ['#fee2e2','#991b1b','#ef4444'], 'בטיפול': ['#ffedd5','#9a3412','#f97316'], 'טופלה': ['#dcfce7','#166534','#22c55e'] };
+        const [bg, color, dot] = map[status] || map['פתוחה'];
+        return <span className="badge" style={{ background: bg, color }}><span className="badge-dot" style={{ background: dot }}></span>{status}</span>;
+    }
+
+    function PriorityBadge({ priority }) {
+        const map = { 'דחופה': ['#fef2f2','#dc2626','exclamation-circle'], 'רגילה': ['#eff6ff','#2563eb','minus-circle'], 'נמוכה': ['#f8fafc','#64748b','arrow-circle-down'] };
+        const [bg, color, icon] = map[priority] || map['רגילה'];
+        return <span className="badge" style={{ background: bg, color }}><Icon name={icon} />{priority}</span>;
+    }
+
+    // ===== LOGIN PAGE =====
+    function LoginPage({ onLogin }) {
+        const [username, setUsername] = useState('');
+        const [password, setPassword] = useState('');
+        const [loading, setLoading] = useState(false);
+        const [error, setError] = useState('');
+        const [showPass, setShowPass] = useState(false);
+
+        const handleLogin = async () => {
+            if (!username.trim() || !password.trim()) { setError('יש למלא שם משתמש וסיסמה'); return; }
+            setLoading(true); setError('');
+            try {
+                const res = await fetch(`${API_URL}?action=login&username=${encodeURIComponent(username.trim())}&password=${encodeURIComponent(password.trim())}`);
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
+                    onLogin(data.user);
+                } else {
+                    setError('שם משתמש או סיסמה שגויים');
+                }
+            } catch {
+                setError('שם משתמש או סיסמה שגויים');
+            }
+            setLoading(false);
+        };
+
+        const handleKey = (e) => { if (e.key === 'Enter') handleLogin(); };
+
+        return (
+            <div className="login-page">
+                <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                    <div style={{ width: 72, height: 72, borderRadius: 20, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 32px rgba(29,78,216,0.3)' }}>
+                        <Icon name="wrench" style={{ color: 'white', fontSize: 28 }} />
+                    </div>
+                    <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)' }}>מערכת אחזקה</h1>
+                    <p style={{ color: 'var(--muted)', marginTop: 6, fontSize: 14 }}>כניסה למערכת</p>
+                </div>
+
+                <div className="login-box">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>שם משתמש</label>
+                            <div style={{ position: 'relative' }}>
+                                <Icon name="user" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14 }} />
+                                <input className="input" type="text" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={handleKey} placeholder="הכנס שם משתמש" style={{ paddingRight: 36 }} autoComplete="username" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>סיסמה</label>
+                            <div style={{ position: 'relative' }}>
+                                <Icon name="lock" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14 }} />
+                                <input className="input" type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKey} placeholder="הכנס סיסמה" style={{ paddingRight: 36, paddingLeft: 36 }} autoComplete="current-password" />
+                                <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: 14 }}>
+                                    <Icon name={showPass ? 'eye-slash' : 'eye'} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', color: '#dc2626', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Icon name="exclamation-circle" /> {error}
+                            </div>
+                        )}
+
+                        <button className="btn btn-blue" style={{ width: '100%', padding: '14px', fontSize: 16, marginTop: 4 }} onClick={handleLogin} disabled={loading}>
+                            {loading ? <><Icon name="spinner" className="spinner" /> מתחבר...</> : <><Icon name="sign-in-alt" /> כניסה</>}
+                        </button>
+                    </div>
+                </div>
+
+                <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 24, textAlign: 'center' }}>
+                    לא זוכר סיסמה? פנה למנהל המערכת
+                </p>
+            </div>
+        );
+    }
+
+    // ===== MAIN APP =====
+    function App() {
+        const [currentUser, setCurrentUser] = useState(null);
+        const [authChecked, setAuthChecked] = useState(false);
+        const [tickets, setTickets] = useState([]);
+        const [syncStatus, setSyncStatus] = useState('מחובר');
+        const [activeTab, setActiveTab] = useState(null);
+
+        // Check saved session
+        useEffect(() => {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try { setCurrentUser(JSON.parse(saved)); }
+                catch { localStorage.removeItem(STORAGE_KEY); }
+            }
+            setAuthChecked(true);
+        }, []);
+
+        useEffect(() => {
+            if (currentUser) {
+                loadTickets();
+                // Set default tab based on role
+                if (currentUser.role === 'requester') setActiveTab('my');
+                else if (currentUser.role === 'worker') setActiveTab('tasks');
+                else setActiveTab('dashboard');
+            }
+        }, [currentUser]);
+
+        const loadTickets = async () => {
+            setSyncStatus('טוען...');
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                if (!data.error) { setTickets(data.sort((a,b) => new Date(b.date)-new Date(a.date))); setSyncStatus('מעודכן'); }
+                else setSyncStatus('שגיאה');
+            } catch { setSyncStatus('שגיאת חיבור'); }
+        };
+
+        const syncToSheet = async (action, ticket) => {
+            setSyncStatus('מסנכרן...');
+            try {
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, ticket }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' });
+                setSyncStatus('מעודכן');
+            } catch { setSyncStatus('שגיאת סנכרון'); }
+        };
+
+        const handleAdd = (t) => {
+            const ticket = { ...t, id: generateId(), status: 'פתוחה', date: new Date().toISOString().split('T')[0], tags: [], managerNotes: [], openedBy: currentUser.username, openedByName: currentUser.name };
+            setTickets([ticket, ...tickets]);
+            syncToSheet('ADD', ticket);
+        };
+
+        const handleEdit = (id, data) => {
+            const updated = tickets.map(t => t.id === id ? { ...t, ...data } : t);
+            setTickets(updated);
+            syncToSheet('UPDATE', updated.find(t => t.id === id));
+        };
+
+        const handleDelete = (id) => {
+            setTickets(tickets.filter(t => t.id !== id));
+            syncToSheet('DELETE', { id });
+        };
+
+        const updateStatus = (id, status) => {
+            const updated = tickets.map(t => t.id === id ? { ...t, status } : t);
+            setTickets(updated);
+            syncToSheet('UPDATE', updated.find(t => t.id === id));
+        };
+
+        const addNote = (id, text) => {
+            const note = { id: Date.now(), text, date: new Date().toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' }), by: currentUser.name };
+            const updated = tickets.map(t => t.id === id ? { ...t, managerNotes: [...(t.managerNotes||[]), note] } : t);
+            setTickets(updated);
+            syncToSheet('UPDATE', updated.find(t => t.id === id));
+        };
+
+        const toggleTag = (id, tag) => {
+            const updated = tickets.map(t => {
+                if (t.id !== id) return t;
+                const curr = t.tags || [];
+                return { ...t, tags: curr.includes(tag) ? curr.filter(g => g !== tag) : [...curr, tag] };
+            });
+            setTickets(updated);
+            syncToSheet('UPDATE', updated.find(t => t.id === id));
+        };
+
+        const handleLogout = () => {
+            localStorage.removeItem(STORAGE_KEY);
+            setCurrentUser(null);
+            setTickets([]);
+        };
+
+        if (!authChecked) return null;
+        if (!currentUser) return <LoginPage onLogin={u => setCurrentUser(u)} />;
+
+        const isSynced = syncStatus === 'מעודכן' || syncStatus === 'מחובר';
+        const rc = ROLE_COLORS[currentUser.role] || ROLE_COLORS.requester;
+
+        // My tickets (for requester)
+        const myTickets = tickets.filter(t => t.openedBy === currentUser.username);
+        // Active tickets (for worker)
+        const activeTickets = tickets.filter(t => t.status !== 'טופלה');
+
+        // Tabs per role
+        const tabs = {
+            requester: [
+                { id: 'new', icon: 'plus-circle', label: 'קריאה חדשה' },
+                { id: 'my', icon: 'list', label: `הקריאות שלי (${myTickets.length})` },
+            ],
+            worker: [
+                { id: 'tasks', icon: 'tools', label: `משימות (${activeTickets.length})` },
+                { id: 'done', icon: 'check-circle', label: 'טופלו' },
+            ],
+            manager: [
+                { id: 'dashboard', icon: 'chart-bar', label: 'דשבורד' },
+                { id: 'all', icon: 'list', label: 'כל הקריאות' },
+                { id: 'users', icon: 'users', label: 'משתמשים' },
+            ],
+        };
+
+        const roleTabs = tabs[currentUser.role] || [];
+        const tabColors = { requester: '#1d4ed8', worker: '#ea580c', manager: '#7c3aed' };
+        const tabColor = tabColors[currentUser.role];
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+                {/* Header */}
+                <div className="app-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: rc.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Icon name="wrench" style={{ color: 'white', fontSize: 13 }} />
+                        </div>
+                        <span style={{ fontWeight: 800, fontSize: 15 }}>מערכת אחזקה</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: isSynced ? '#f0fdf4' : '#fefce8', color: isSynced ? '#15803d' : '#a16207', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>
+                            <span className={isSynced ? '' : 'pulse'} style={{ width: 6, height: 6, borderRadius: '50%', background: isSynced ? '#22c55e' : '#eab308', display: 'inline-block' }}></span>
+                            {syncStatus}
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {/* User badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: rc.bg, border: `1px solid`, borderColor: rc.color + '40', borderRadius: 20, padding: '4px 10px 4px 4px' }}>
+                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: rc.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'white' }}>
+                                {currentUser.name?.charAt(0) || '?'}
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: rc.color, lineHeight: 1 }}>{currentUser.name}</div>
+                                <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1, marginTop: 1 }}>{rc.label}</div>
+                            </div>
+                        </div>
+                        <button onClick={handleLogout} style={{ border: 'none', background: 'transparent', color: '#94a3b8', fontSize: 18, cursor: 'pointer', padding: 4 }} title="יציאה">
+                            <Icon name="sign-out-alt" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="scroll-area hide-scroll" style={{ padding: '16px' }}>
+                    {/* REQUESTER */}
+                    {currentUser.role === 'requester' && activeTab === 'new' && (
+                        <NewTicketForm onAdd={ticket => { handleAdd(ticket); setActiveTab('my'); }} onCancel={() => setActiveTab('my')} />
+                    )}
+                    {currentUser.role === 'requester' && activeTab === 'my' && (
+                        <MyTickets tickets={myTickets} onEdit={handleEdit} onDelete={handleDelete} onNew={() => setActiveTab('new')} currentUser={currentUser} />
+                    )}
+
+                    {/* WORKER */}
+                    {currentUser.role === 'worker' && activeTab === 'tasks' && (
+                        <WorkerTasks tickets={activeTickets} updateStatus={updateStatus} />
+                    )}
+                    {currentUser.role === 'worker' && activeTab === 'done' && (
+                        <DoneTickets tickets={tickets.filter(t => t.status === 'טופלה')} updateStatus={updateStatus} />
+                    )}
+
+                    {/* MANAGER */}
+                    {currentUser.role === 'manager' && activeTab === 'dashboard' && (
+                        <ManagerDashboard tickets={tickets} />
+                    )}
+                    {currentUser.role === 'manager' && activeTab === 'all' && (
+                        <AllTickets tickets={tickets} addNote={addNote} toggleTag={toggleTag} updateStatus={updateStatus} currentUser={currentUser} />
+                    )}
+                    {currentUser.role === 'manager' && activeTab === 'users' && (
+                        <UsersManager apiUrl={API_URL} />
+                    )}
+                </div>
+
+                {/* Bottom nav */}
+                <div className="bottom-nav">
+                    {roleTabs.map(tab => (
+                        <button key={tab.id} className={`nav-item ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+                            <div className="nav-icon" style={{ background: activeTab === tab.id ? (rc.bg) : 'transparent' }}>
+                                <Icon name={tab.icon} style={{ color: activeTab === tab.id ? tabColor : '#94a3b8' }} />
+                            </div>
+                            <span className="nav-label" style={{ color: activeTab === tab.id ? tabColor : '#94a3b8', fontSize: 10 }}>{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // ===== NEW TICKET FORM =====
+    function NewTicketForm({ onAdd, onCancel }) {
+        const [form, setForm] = useState({ description: '', location: '', priority: 'רגילה', image: null });
+        const fileRef = useRef(null);
+
+        const resizeImage = (file) => new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let [w, h] = [img.width, img.height];
+                    if (w > 800) { h = h * 800 / w; w = 800; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        const handleSubmit = () => {
+            if (!form.location.trim() || !form.description.trim()) return;
+            onAdd(form);
+        };
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <h2 style={{ fontWeight: 800, fontSize: 20 }}>קריאה חדשה</h2>
+
+                <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>מיקום במפעל</label>
+                    <input className="input" type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} placeholder="לדוגמה: קו אריזה 2" />
+                </div>
+
+                <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>רמת דחיפות</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        {[
+                            { v: 'נמוכה', color: '#64748b', activeBg: '#f1f5f9' },
+                            { v: 'רגילה', color: 'var(--blue)', activeBg: '#eff6ff' },
+                            { v: 'דחופה', color: 'var(--red)', activeBg: '#fef2f2' },
+                        ].map(({ v, color, activeBg }) => (
+                            <button key={v} className="priority-btn" onClick={() => setForm({...form, priority: v})}
+                                style={{ borderColor: form.priority === v ? color : 'var(--border)', background: form.priority === v ? activeBg : 'white', color: form.priority === v ? color : 'var(--muted)' }}>
+                                {v}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>תיאור הבעיה</label>
+                    <textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{ height: 100, resize: 'none' }} placeholder="תאר את התקלה בפירוט..."></textarea>
+                </div>
+
+                <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>תמונה מהשטח</label>
+                    <button onClick={() => fileRef.current.click()} style={{ width: '100%', padding: '12px', border: '1.5px dashed var(--border)', borderRadius: 12, background: '#f9fafb', color: 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Heebo', fontSize: 14 }}>
+                        <Icon name="camera" /> {form.image ? 'החלף תמונה' : 'צלם / בחר תמונה'}
+                    </button>
+                    <input type="file" accept="image/*" capture="environment" onChange={async e => { const f = e.target.files[0]; if(f) setForm({...form, image: await resizeImage(f)}); }} ref={fileRef} style={{ display: 'none' }} />
+                    {form.image && (
+                        <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
+                            <img src={form.image} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10 }} alt="" />
+                            <button onClick={() => setForm({...form, image: null})} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--red)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 10 }}>✕</button>
+                        </div>
+                    )}
+                </div>
+
+                <button className="btn btn-blue" style={{ width: '100%', padding: '14px', fontSize: 16 }} onClick={handleSubmit}>
+                    <Icon name="paper-plane" /> שלח קריאה
+                </button>
+            </div>
+        );
+    }
+
+    // ===== MY TICKETS (Requester) =====
+    function MyTickets({ tickets, onEdit, onDelete, onNew }) {
+        const [editTicket, setEditTicket] = useState(null);
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h2 style={{ fontWeight: 800, fontSize: 20 }}>הקריאות שלי</h2>
+                    <span style={{ background: '#eff6ff', color: 'var(--blue)', padding: '3px 12px', borderRadius: 20, fontWeight: 700, fontSize: 13 }}>{tickets.length}</span>
+                </div>
+
+                {tickets.map(ticket => (
+                    <div key={ticket.id} className="ticket-card">
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            {ticket.image && <img src={ticket.image} style={{ width: 58, height: 58, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} alt="" />}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 4 }}>{ticket.id}</span>
+                                    <div style={{ display: 'flex', gap: 6 }}>
+                                        <button onClick={() => setEditTicket(ticket)} style={{ border: 'none', background: '#eff6ff', color: 'var(--blue)', borderRadius: 8, padding: '5px 8px', cursor: 'pointer', fontSize: 13 }}><Icon name="edit" /></button>
+                                        <button onClick={() => { if(confirm('למחוק?')) onDelete(ticket.id); }} style={{ border: 'none', background: '#fef2f2', color: 'var(--red)', borderRadius: 8, padding: '5px 8px', cursor: 'pointer', fontSize: 13 }}><Icon name="trash" /></button>
+                                    </div>
+                                </div>
+                                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 5 }}>{ticket.location}</div>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 5 }}>
+                                    <StatusBadge status={ticket.status} />
+                                    <PriorityBadge priority={ticket.priority} />
+                                </div>
+                                <p style={{ color: 'var(--muted)', fontSize: 13, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ticket.description}</p>
+                                {ticket.managerNotes?.length > 0 && (
+                                    <div style={{ marginTop: 8, background: '#faf5ff', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--purple)' }}>
+                                        <Icon name="comment-dots" /> {ticket.managerNotes.length} הערות מנהל
+                                    </div>
+                                )}
+                                <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>{ticket.date}</span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {tickets.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '48px 24px', background: '#f8fafc', borderRadius: 14, border: '1.5px dashed var(--border)' }}>
+                        <Icon name="clipboard-list" style={{ fontSize: 48, color: '#cbd5e1', display: 'block', marginBottom: 12 }} />
+                        <p style={{ color: 'var(--muted)', fontWeight: 600 }}>אין קריאות עדיין</p>
+                        <button className="btn btn-blue" style={{ margin: '16px auto 0', padding: '10px 24px' }} onClick={onNew}>
+                            <Icon name="plus" /> פתח קריאה ראשונה
+                        </button>
+                    </div>
+                )}
+
+                {/* Edit modal */}
+                {editTicket && (
+                    <EditTicketModal ticket={editTicket} onSave={(id, data) => { onEdit(id, data); setEditTicket(null); }} onClose={() => setEditTicket(null)} />
+                )}
+            </div>
+        );
+    }
+
+    function EditTicketModal({ ticket, onSave, onClose }) {
+        const [form, setForm] = useState({ description: ticket.description, location: ticket.location, priority: ticket.priority, image: ticket.image });
+        const fileRef = useRef(null);
+        const resizeImage = (file) => new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let [w,h]=[img.width,img.height]; if(w>800){h=h*800/w;w=800;} canvas.width=w;canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h); resolve(canvas.toDataURL('image/jpeg',0.7)); }; img.src=e.target.result; }; reader.readAsDataURL(file);
+        });
+        return (
+            <div className="modal-bg" onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
+                <div className="modal-sheet">
+                    <div className="modal-handle"></div>
+                    <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ fontWeight: 800, fontSize: 19 }}>עריכת {ticket.id}</h2>
+                        <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
+                    </div>
+                    <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>מיקום</label><input className="input" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} /></div>
+                        <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>דחיפות</label>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                {[{v:'נמוכה',c:'#64748b'},{v:'רגילה',c:'var(--blue)'},{v:'דחופה',c:'var(--red)'}].map(({v,c})=>(
+                                    <button key={v} className="priority-btn" onClick={()=>setForm({...form,priority:v})} style={{ borderColor: form.priority===v?c:'var(--border)', color: form.priority===v?c:'var(--muted)' }}>{v}</button>
+                                ))}
+                            </div>
+                        </div>
+                        <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>תיאור</label><textarea className="input" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{ height: 90, resize: 'none' }}></textarea></div>
+                        <button className="btn btn-orange" style={{ width: '100%', padding: '13px' }} onClick={() => onSave(ticket.id, form)}>שמור שינויים</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ===== WORKER TASKS =====
+    function WorkerTasks({ tickets, updateStatus }) {
+        return (
+            <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <h2 style={{ fontWeight: 800, fontSize: 20 }}>משימות פתוחות</h2>
+                    <span style={{ background: '#fff7ed', color: 'var(--orange)', padding: '4px 14px', borderRadius: 20, fontWeight: 700, border: '1.5px solid #fed7aa' }}>{tickets.length}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {tickets.map(ticket => (
+                        <div key={ticket.id} className="ticket-card" style={{ borderColor: ticket.priority==='דחופה'?'#fecaca':'var(--border)', background: ticket.priority==='דחופה'?'#fff5f5':'white' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 4 }}>{ticket.id}</span>
+                                <div style={{ display: 'flex', gap: 6 }}><PriorityBadge priority={ticket.priority} /><StatusBadge status={ticket.status} /></div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(59,130,246,0.06)', borderRadius: 10, marginBottom: 10 }}>
+                                <Icon name="map-marker-alt" style={{ color: 'var(--blue)' }} />
+                                <strong style={{ fontSize: 16 }}>{ticket.location}</strong>
+                                {ticket.openedByName && <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 'auto' }}>נפתח ע"י {ticket.openedByName}</span>}
+                            </div>
+                            <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.6, marginBottom: 10 }}>{ticket.description}</p>
+                            {ticket.tags?.length>0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>{ticket.tags.map(tag=><span key={tag} style={{ background: '#f1f5f9', color: 'var(--muted)', fontSize: 12, padding: '3px 10px', borderRadius: 20 }}>{tag}</span>)}</div>}
+                            {ticket.managerNotes?.length>0 && (
+                                <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: 10, marginBottom: 10 }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--purple)', marginBottom: 6 }}>הערות מנהל:</div>
+                                    {ticket.managerNotes.map(note=><div key={note.id} style={{ fontSize: 13, color: '#4c1d95', marginBottom: 4 }}><span style={{ fontSize: 10, display: 'block', color: 'var(--purple)' }}>{note.date} — {note.by||'מנהל'}</span>{note.text}</div>)}
+                                </div>
+                            )}
+                            {ticket.image && <img src={ticket.image} style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 10, marginBottom: 10 }} alt="" />}
+                            <div style={{ paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
+                                {ticket.status==='פתוחה' && <button className="btn btn-orange" style={{ width: '100%', padding: '12px' }} onClick={()=>updateStatus(ticket.id,'בטיפול')}><Icon name="play" />התחל טיפול</button>}
+                                {ticket.status==='בטיפול' && <button className="btn btn-green" style={{ width: '100%', padding: '12px' }} onClick={()=>updateStatus(ticket.id,'טופלה')}><Icon name="check" />סמן כטופל</button>}
+                            </div>
+                        </div>
+                    ))}
+                    {tickets.length===0 && <div style={{ textAlign: 'center', padding: '64px 24px' }}><Icon name="check-circle" style={{ fontSize: 64, color: '#86efac', display: 'block', marginBottom: 16 }} /><p style={{ fontSize: 20, fontWeight: 700 }}>אין משימות פתוחות!</p><p style={{ color: 'var(--muted)', marginTop: 6 }}>עבודה מצוינת 🎉</p></div>}
+                </div>
+            </div>
+        );
+    }
+
+    // ===== DONE TICKETS (Worker) =====
+    function DoneTickets({ tickets, updateStatus }) {
+        return (
+            <div>
+                <h2 style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>קריאות שטופלו ({tickets.length})</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {tickets.map(ticket => (
+                        <div key={ticket.id} className="ticket-card" style={{ opacity: 0.8 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)' }}>{ticket.id}</span>
+                                <StatusBadge status={ticket.status} />
+                            </div>
+                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{ticket.location}</div>
+                            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>{ticket.description}</p>
+                            <button onClick={()=>updateStatus(ticket.id,'פתוחה')} style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #fcd34d', background: '#fefce8', color: '#a16207', cursor: 'pointer', fontFamily: 'Heebo', fontWeight: 600, fontSize: 13 }}>
+                                <Icon name="sync-alt" /> פתח מחדש
+                            </button>
+                        </div>
+                    ))}
+                    {tickets.length===0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>אין קריאות שטופלו עדיין</div>}
+                </div>
+            </div>
+        );
+    }
+
+    // ===== MANAGER DASHBOARD =====
+    function ManagerDashboard({ tickets }) {
+        const stats = [
+            { label: 'סה״כ', count: tickets.length, icon: 'list', bg: '#eff6ff', color: 'var(--blue)', iconBg: 'var(--blue)' },
+            { label: 'ממתינות', count: tickets.filter(t=>t.status==='פתוחה').length, icon: 'exclamation-circle', bg: '#fef2f2', color: 'var(--red)', iconBg: 'var(--red)' },
+            { label: 'בעבודה', count: tickets.filter(t=>t.status==='בטיפול').length, icon: 'tools', bg: '#fff7ed', color: 'var(--orange)', iconBg: 'var(--orange)' },
+            { label: 'טופלו', count: tickets.filter(t=>t.status==='טופלה').length, icon: 'check-circle', bg: '#f0fdf4', color: 'var(--green)', iconBg: 'var(--green)' },
+        ];
+
+        const urgent = tickets.filter(t => t.priority==='דחופה' && t.status!=='טופלה');
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <h2 style={{ fontWeight: 800, fontSize: 20 }}>דשבורד ניהול</h2>
+                <div className="stat-grid">
+                    {stats.map(s => (
+                        <div key={s.label} className="stat-card" style={{ background: s.bg }}>
+                            <div className="stat-icon" style={{ background: s.iconBg }}><Icon name={s.icon} /></div>
+                            <div><div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500 }}>{s.label}</div><div style={{ fontSize: 28, fontWeight: 800, color: s.color, lineHeight: 1.2 }}>{s.count}</div></div>
+                        </div>
+                    ))}
+                </div>
+                {urgent.length > 0 && (
+                    <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: 14, padding: 14 }}>
+                        <div style={{ fontWeight: 700, color: 'var(--red)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Icon name="exclamation-triangle" /> {urgent.length} קריאות דחופות פתוחות
+                        </div>
+                        {urgent.map(t => (
+                            <div key={t.id} style={{ background: 'white', borderRadius: 10, padding: 10, marginBottom: 8, border: '1px solid #fecaca' }}>
+                                <div style={{ fontWeight: 700 }}>{t.location}</div>
+                                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{t.description}</div>
+                                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{t.id} • {t.date}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ===== ALL TICKETS (Manager) =====
+    function AllTickets({ tickets, addNote, toggleTag, updateStatus, currentUser }) {
+        const [search, setSearch] = useState('');
+        const [filterStatus, setFilterStatus] = useState('הכל');
+        const [selectedTicket, setSelectedTicket] = useState(null);
+
+        const filtered = tickets.filter(t => {
+            const matchSearch = !search || t.id?.toLowerCase().includes(search.toLowerCase()) || t.location?.includes(search) || t.description?.includes(search) || t.openedByName?.includes(search);
+            const matchStatus = filterStatus==='הכל' || t.status===filterStatus;
+            return matchSearch && matchStatus;
+        });
+
+        const handleAddNote = (id, text) => {
+            addNote(id, text);
+            const note = { id: Date.now(), text, date: new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}), by: currentUser.name };
+            setSelectedTicket({ ...selectedTicket, managerNotes: [...(selectedTicket.managerNotes||[]), note] });
+        };
+
+        const handleToggleTag = (id, tag) => {
+            toggleTag(id, tag);
+            const curr = selectedTicket.tags||[];
+            setSelectedTicket({ ...selectedTicket, tags: curr.includes(tag)?curr.filter(t=>t!==tag):[...curr,tag] });
+        };
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ position: 'relative' }}>
+                    <Icon name="search" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14 }} />
+                    <input className="input" type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="חיפוש לפי מיקום, שם עובד..." style={{ paddingRight: 36 }} />
+                </div>
+                <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', padding: 4, borderRadius: 12 }}>
+                    {['הכל','פתוחה','בטיפול','טופלה'].map(s=>(
+                        <button key={s} onClick={()=>setFilterStatus(s)} style={{ flex: 1, padding: '7px 2px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 500, fontFamily: 'Heebo', background: filterStatus===s?'white':'transparent', color: filterStatus===s?'var(--text)':'var(--muted)', boxShadow: filterStatus===s?'0 1px 3px rgba(0,0,0,0.1)':'none' }}>{s}</button>
+                    ))}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {filtered.map(ticket => (
+                        <div key={ticket.id} className="ticket-card" style={{ cursor: 'pointer' }} onClick={() => setSelectedTicket(ticket)}>
+                            <div style={{ display: 'flex', gap: 10 }}>
+                                {ticket.image ? <img src={ticket.image} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} alt="" /> : <div style={{ width: 50, height: 50, borderRadius: 10, background: '#f1f5f9', border: '1.5px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', flexShrink: 0 }}><Icon name="image" /></div>}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                        <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)' }}>{ticket.id}</span>
+                                        <StatusBadge status={ticket.status} />
+                                    </div>
+                                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{ticket.location}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                        <PriorityBadge priority={ticket.priority} />
+                                        {ticket.openedByName && <span style={{ fontSize: 11, color: 'var(--muted)', background: '#f1f5f9', padding: '2px 8px', borderRadius: 20 }}><Icon name="user" /> {ticket.openedByName}</span>}
+                                        {ticket.managerNotes?.length>0 && <span style={{ fontSize: 11, color: 'var(--purple)', background: '#faf5ff', padding: '2px 8px', borderRadius: 20 }}>{ticket.managerNotes.length} הערות</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {filtered.length===0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>לא נמצאו קריאות</div>}
+                </div>
+
+                {selectedTicket && (
+                    <TicketModal ticket={selectedTicket} onClose={()=>setSelectedTicket(null)} onAddNote={handleAddNote} onToggleTag={handleToggleTag}
+                        onReopen={id=>{ updateStatus(id,'פתוחה'); setSelectedTicket({...selectedTicket,status:'פתוחה'}); }} />
+                )}
+            </div>
+        );
+    }
+
+    // ===== TICKET MODAL =====
+    function TicketModal({ ticket, onClose, onAddNote, onToggleTag, onReopen }) {
+        const [noteText, setNoteText] = useState('');
+        return (
+            <div className="modal-bg" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+                <div className="modal-sheet">
+                    <div className="modal-handle"></div>
+                    <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div><h2 style={{ fontWeight: 800, fontSize: 19 }}>{ticket.location}</h2><span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)' }}>{ticket.id}</span></div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            {ticket.status==='טופלה' && <button onClick={()=>onReopen(ticket.id)} style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #fcd34d', background: '#fefce8', color: '#a16207', cursor: 'pointer', fontFamily: 'Heebo', fontWeight: 600, fontSize: 13 }}><Icon name="sync-alt" /> פתח</button>}
+                            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', border: '1.5px solid var(--border)', background: 'white', cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
+                        </div>
+                    </div>
+                    <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <div style={{ background: '#f8fafc', borderRadius: 12, padding: 14 }}>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}><StatusBadge status={ticket.status} /><PriorityBadge priority={ticket.priority} />{ticket.openedByName && <span style={{ fontSize: 11, color: 'var(--muted)', background: '#f1f5f9', padding: '2px 8px', borderRadius: 20 }}>נפתח ע"י {ticket.openedByName}</span>}</div>
+                            <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7 }}>{ticket.description}</p>
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}><Icon name="tags" style={{ color: 'var(--purple)', marginLeft: 6 }} />תיוג</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                {AVAILABLE_TAGS.map(tag => { const active=ticket.tags?.includes(tag); return <button key={tag} className="tag-btn" onClick={()=>onToggleTag(ticket.id,tag)} style={{ borderColor: active?'var(--purple)':'var(--border)', background: active?'var(--purple)':'white', color: active?'white':'var(--muted)', fontFamily: 'Heebo' }}>{tag}</button>; })}
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}><Icon name="comment-dots" style={{ color: 'var(--purple)', marginLeft: 6 }} />הערות</div>
+                            {ticket.managerNotes?.length>0 && <div style={{ background: '#faf5ff', borderRadius: 12, padding: 10, marginBottom: 10, maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>{ticket.managerNotes.map(note=><div key={note.id} style={{ background: 'white', borderRadius: 8, padding: 10, border: '1px solid #ede9fe' }}><div style={{ fontSize: 10, fontWeight: 700, color: 'var(--purple)', marginBottom: 3 }}>{note.date}{note.by&&` — ${note.by}`}</div><div style={{ fontSize: 13 }}>{note.text}</div></div>)}</div>}
+                            <textarea className="input" value={noteText} onChange={e=>setNoteText(e.target.value)} placeholder="הוסף הערה..." style={{ height: 80, resize: 'none', marginBottom: 8 }}></textarea>
+                            <button className="btn" onClick={()=>{ if(noteText.trim()){onAddNote(ticket.id,noteText);setNoteText('');} }} disabled={!noteText.trim()} style={{ width: '100%', padding: '12px', background: noteText.trim()?'var(--purple)':'#e9d5ff', color: 'white', fontSize: 14 }}>שמור הערה</button>
+                        </div>
+                        {ticket.image && <div><div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}><Icon name="camera" style={{ color: 'var(--purple)', marginLeft: 6 }} />תמונה</div><img src={ticket.image} style={{ width: '100%', maxHeight: 240, objectFit: 'contain', borderRadius: 12, border: '1px solid var(--border)', background: '#f8fafc' }} alt="" /></div>}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ===== USERS MANAGER =====
+    function UsersManager({ apiUrl }) {
+        const [users, setUsers] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [showAdd, setShowAdd] = useState(false);
+        const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'requester' });
+        const [saving, setSaving] = useState(false);
+        const [msg, setMsg] = useState('');
+
+        const loadUsers = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(`${apiUrl}?action=getUsers`);
+                const data = await res.json();
+                setUsers(data.users || []);
+            } catch { setMsg('שגיאה בטעינת משתמשים'); }
+            setLoading(false);
+        };
+
+        useEffect(() => { loadUsers(); }, []);
+
+        const handleAdd = async () => {
+            if (!newUser.username || !newUser.password || !newUser.name) { setMsg('יש למלא את כל השדות'); return; }
+            setSaving(true);
+            try {
+                await fetch(apiUrl, { method: 'POST', body: JSON.stringify({ action: 'addUser', user: newUser }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' });
+                setMsg('המשתמש נוסף בהצלחה');
+                setNewUser({ username: '', password: '', name: '', role: 'requester' });
+                setShowAdd(false);
+                setTimeout(() => loadUsers(), 1500);
+            } catch { setMsg('שגיאה בהוספת משתמש'); }
+            setSaving(false);
+        };
+
+        const handleDelete = async (username) => {
+            if (!confirm(`למחוק את המשתמש ${username}?`)) return;
+            try {
+                await fetch(apiUrl, { method: 'POST', body: JSON.stringify({ action: 'deleteUser', username }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' });
+                setMsg('המשתמש נמחק');
+                setTimeout(() => loadUsers(), 1500);
+            } catch { setMsg('שגיאה במחיקה'); }
+        };
+
+        const roleLabel = { requester: 'עובד ייצור', worker: 'איש אחזקה', manager: 'מנהל' };
+        const roleColor = { requester: 'var(--blue)', worker: 'var(--orange)', manager: 'var(--purple)' };
+        const roleBg = { requester: '#eff6ff', worker: '#fff7ed', manager: '#faf5ff' };
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h2 style={{ fontWeight: 800, fontSize: 20 }}>ניהול משתמשים</h2>
+                    <button className="btn btn-blue" style={{ padding: '8px 16px', fontSize: 13 }} onClick={() => setShowAdd(true)}>
+                        <Icon name="plus" /> משתמש חדש
+                    </button>
+                </div>
+
+                {msg && <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', color: 'var(--green)', fontSize: 13 }}>{msg}</div>}
+
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}><Icon name="spinner" className="spinner" style={{ fontSize: 24 }} /></div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {users.map(user => (
+                            <div key={user.username} style={{ background: 'white', borderRadius: 14, border: '1px solid var(--border)', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: roleColor[user.role]||'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: 'white' }}>
+                                        {user.name?.charAt(0)||'?'}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: 700, fontSize: 15 }}>{user.name}</div>
+                                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>@{user.username}</div>
+                                        <span style={{ fontSize: 11, fontWeight: 600, color: roleColor[user.role], background: roleBg[user.role], padding: '2px 8px', borderRadius: 20, marginTop: 4, display: 'inline-block' }}>{roleLabel[user.role]||user.role}</span>
+                                    </div>
+                                </div>
+                                <button onClick={() => handleDelete(user.username)} style={{ border: 'none', background: '#fef2f2', color: 'var(--red)', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontSize: 14 }}>
+                                    <Icon name="trash" />
+                                </button>
+                            </div>
+                        ))}
+                        {users.length===0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--muted)' }}>אין משתמשים עדיין</div>}
+                    </div>
+                )}
+
+                {/* Add user modal */}
+                {showAdd && (
+                    <div className="modal-bg" onClick={e=>{ if(e.target===e.currentTarget) setShowAdd(false); }}>
+                        <div className="modal-sheet">
+                            <div className="modal-handle"></div>
+                            <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h2 style={{ fontWeight: 800, fontSize: 19 }}>הוסף משתמש חדש</h2>
+                                <button onClick={()=>setShowAdd(false)} style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
+                            </div>
+                            <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>שם מלא</label><input className="input" value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})} placeholder="לדוגמה: ישראל ישראלי" /></div>
+                                <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>שם משתמש</label><input className="input" value={newUser.username} onChange={e=>setNewUser({...newUser,username:e.target.value})} placeholder="לדוגמה: israel1" autoComplete="off" /></div>
+                                <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>סיסמה</label><input className="input" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} placeholder="סיסמה ראשונית" autoComplete="new-password" /></div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>תפקיד</label>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        {[{v:'requester',l:'עובד ייצור'},{v:'worker',l:'איש אחזקה'},{v:'manager',l:'מנהל'}].map(({v,l})=>(
+                                            <button key={v} className="priority-btn" onClick={()=>setNewUser({...newUser,role:v})} style={{ borderColor: newUser.role===v?roleColor[v]:'var(--border)', background: newUser.role===v?roleBg[v]:'white', color: newUser.role===v?roleColor[v]:'var(--muted)', fontSize: 12 }}>{l}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button className="btn btn-blue" style={{ width: '100%', padding: '14px', fontSize: 16 }} onClick={handleAdd} disabled={saving}>
+                                    {saving ? <><Icon name="spinner" className="spinner" /> שומר...</> : <><Icon name="user-plus" /> הוסף משתמש</>}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
