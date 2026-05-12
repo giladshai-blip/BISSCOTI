@@ -1,914 +1,635 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>מערכת אחזקה</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#1a73e8">
+    <meta name="apple-mobile-web-app-title" content="ביסקוטי">
+    <title>Biscotti Manager ✨</title>
+    
+    <!-- Premium Home Screen Icon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2270%22 font-family=%22Arial%22 font-size=%2265%22 fill=%22%23fbbc04%22 text-anchor=%22middle%22 font-weight=%22bold%22>B</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2270%22 font-family=%22Arial%22 font-size=%2265%22 fill=%22%23fbbc04%22 text-anchor=%22middle%22 font-weight=%22bold%22>B</text></svg>">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&display=swap');
+        :root { --google-blue: #1a73e8; --google-gray: #5f6368; --google-bg: #f8f9fa; }
+        body { font-family: 'Assistant', sans-serif; background-color: var(--google-bg); color: #202124; margin: 0; }
+        
+        .card { background: white; border: 1px solid #dadce0; border-radius: 12px; padding: 16px; transition: box-shadow 0.2s; }
+        .card:hover { box-shadow: 0 1px 3px rgba(60,64,67,0.3), 0 4px 8px rgba(60,64,67,0.15); }
+        .btn-google { background-color: var(--google-blue); color: white; padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; }
+        
+        /* Sidebar Desktop */
+        .desktop-sidebar { width: 260px; position: fixed; right: 0; top: 0; height: 100vh; background: white; border-left: 1px solid #dadce0; display: none; flex-direction: column; z-index: 50; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; color: #3c4043; border-radius: 0 25px 25px 0; margin: 4px 0; transition: background 0.2s; cursor: pointer; text-decoration: none; font-weight: 500; }
+        .nav-item.active { background-color: #e8f0fe; color: var(--google-blue); font-weight: 700; }
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        /* Mobile Layout */
+        .mobile-header { position: fixed; top: 0; width: 100%; height: 60px; background: white; border-bottom: 1px solid #dadce0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 40; }
+        .mobile-nav { position: fixed; bottom: 0; width: 100%; height: 70px; background: white; border-top: 1px solid #dadce0; display: flex; z-index: 40; padding-bottom: env(safe-area-inset-bottom); }
+        .mobile-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #5f6368; gap: 4px; font-size: 10px; cursor: pointer; border: none; background: transparent; }
+        .mobile-nav-item.active { color: var(--google-blue); font-weight: 700; }
 
-        :root {
-            --blue: #1d4ed8; --orange: #ea580c; --purple: #7c3aed;
-            --green: #16a34a; --red: #dc2626;
-            --bg: #f0f4f8; --surface: #ffffff;
-            --border: #e8edf2; --text: #0f172a; --muted: #64748b;
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        .main-content { padding-top: 75px; padding-bottom: 85px; px: 16px; width: 100%; }
+        
+        @media (min-width: 768px) {
+            .desktop-sidebar { display: flex; }
+            .mobile-header, .mobile-nav { display: none !important; }
+            .main-content { margin-right: 260px; padding-top: 32px; padding-bottom: 32px; padding-left: 32px; padding-right: 32px; width: auto; }
         }
 
-        html, body { height: 100%; overflow: hidden; }
-        body { font-family: 'Heebo', sans-serif; background: var(--bg); color: var(--text); direction: rtl; }
-        #root { height: 100%; display: flex; flex-direction: column; }
-
-        .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(80px + var(--safe-bottom)); }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: white; border-top: 1px solid var(--border);
-            display: flex; padding-bottom: var(--safe-bottom);
-            z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
-        }
-        .nav-item {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: center; padding: 10px 4px; border: none;
-            background: transparent; cursor: pointer; font-family: 'Heebo', sans-serif;
-            gap: 4px;
-        }
-        .nav-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; }
-        .nav-label { font-size: 11px; font-weight: 500; transition: color 0.15s; }
-        .nav-item.active .nav-icon { transform: scale(1.1); }
-
-        .input {
-            width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
-            padding: 13px 14px; font-size: 16px; font-family: 'Heebo', sans-serif;
-            outline: none; background: #fafbfc; color: var(--text);
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(29,78,216,0.1); background: white; }
-
-        .btn {
-            border: none; border-radius: 12px; font-family: 'Heebo', sans-serif;
-            font-weight: 700; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; gap: 8px; transition: all 0.15s; font-size: 15px;
-        }
-        .btn:active { transform: scale(0.97); }
-        .btn-blue { background: var(--blue); color: white; }
-        .btn-orange { background: var(--orange); color: white; }
-        .btn-green { background: var(--green); color: white; }
-        .btn-red { background: var(--red); color: white; }
-
-        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
-
-        .card { background: white; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
-        .ticket-card { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 14px; }
-
-        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; animation: fadeIn 0.2s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .modal-sheet { background: white; width: 100%; max-height: 92vh; border-radius: 20px 20px 0 0; overflow-y: auto; -webkit-overflow-scrolling: touch; animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1); padding-bottom: calc(24px + var(--safe-bottom)); }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .modal-handle { width: 36px; height: 4px; border-radius: 2px; background: #e2e8f0; margin: 12px auto 0; }
-
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat-card { border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 10px; }
-        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
-
-        .priority-btn { flex: 1; padding: 10px 6px; border-radius: 10px; border: 2px solid var(--border); background: white; font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center; }
-        .tag-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid; font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .pulse { animation: pulse 2s infinite; }
-
-        .app-header { background: white; border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
-
-        /* Login */
-        .login-page { min-height: 100vh; background: linear-gradient(160deg, #eff6ff 0%, #f0f4f8 60%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; }
-        .login-box { width: 100%; max-width: 380px; background: white; border-radius: 20px; padding: 32px 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.1); border: 1px solid var(--border); }
-
-        /* Spinner */
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { animation: spin 0.8s linear infinite; }
-
-        /* User badge */
-        .user-badge { display: flex; align-items: center; gap: 8px; background: #f8fafc; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px 4px 6px; }
-        .user-avatar { width: 26px; height: 26px; border-radius: '50%'; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; border-radius: 50%; }
+        .gauge-container { height: 100px; width: 100%; position: relative; }
+        .view-mode-active input { border-color: transparent !important; background-color: transparent !important; pointer-events: none !important; }
+        .layout-btn.active { background-color: var(--google-blue); color: white; border-color: var(--google-blue); }
+        
+        /* Toast fix */
+        #toast { position: fixed; z-index: 9999; bottom: 90px; left: 50%; transform: translateX(-50%); max-width: 90vw; width: max-content; }
+        @media (min-width: 768px) { #toast { bottom: 32px; right: 32px; left: auto; transform: none; } }
     </style>
 </head>
-<body>
-<div id="root"></div>
+<body class="flex min-h-screen">
 
-<script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    <script>
+        const APP_URL = 'https://script.google.com/macros/s/AKfycbz503qQ-oUx_pvmKjD9p9dHNRwUVhBxzcW0T6STAl_AyWK6vVPabI0R2qbB2i8Jy3muEA/exec';
+        let state = { employees: [], hours: [], inventory: [], tasks: [], orders: [], selectedEmp: null };
+        let displayModes = { employees: false, inventory: false }; 
+        let layouts = { employees: 'list', orders: 'list' }; 
 
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwB9n9tXxHsV7pnFSUOzO8Pv39qeVm0huAqn2ar--TPY6eR7rGA5totXdlDRUE7aD-BDw/exec';
-    const AVAILABLE_TAGS = ['בטיחות', 'הוזמן חלק', 'ממתין לספק', 'חשמל', 'מכניקה', 'צנרת'];
-    const STORAGE_KEY = 'maintenance_user';
+        function showToast(m, bg = 'bg-gray-800') {
+            const t = document.getElementById('toast');
+            if(!t) return;
+            t.innerText = m;
+            t.className = `fixed z-[9999] max-w-[90vw] w-max bottom-[90px] left-1/2 -translate-x-1/2 md:bottom-8 md:right-8 md:left-auto md:translate-x-0 text-white px-6 py-3 rounded shadow-2xl text-sm font-bold ${bg}`;
+            t.style.display = 'block';
+            setTimeout(() => { if(document.getElementById('toast')) document.getElementById('toast').style.display = 'none'; }, 4000);
+        }
+    </script>
 
-    const Icon = ({ name, style, className }) => <i className={`fas fa-${name} ${className||''}`} style={style}></i>;
-    const generateId = () => 'TKT-' + Math.floor(1000 + Math.random() * 9000);
+    <div id="toast" style="display:none;"></div>
 
-    const ROLE_COLORS = {
-        requester: { color: '#1d4ed8', bg: '#eff6ff', label: 'עובד ייצור' },
-        worker:    { color: '#ea580c', bg: '#fff7ed', label: 'איש אחזקה' },
-        manager:   { color: '#7c3aed', bg: '#faf5ff', label: 'מנהל' },
-    };
+    <!-- 📱 Mobile UI -->
+    <header class="mobile-header">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-yellow-400 font-black">B</div>
+            <span class="text-xl font-bold">ביסקוטי</span>
+        </div>
+        <button onclick="triggerSync()" class="text-green-600 bg-green-50 w-9 h-9 rounded-full flex items-center justify-center border border-green-100">
+            <i id="sync-icon-mobile" class="fa-solid fa-arrows-rotate"></i>
+        </button>
+    </header>
 
-    function StatusBadge({ status }) {
-        const map = { 'פתוחה': ['#fee2e2','#991b1b','#ef4444'], 'בטיפול': ['#ffedd5','#9a3412','#f97316'], 'טופלה': ['#dcfce7','#166534','#22c55e'] };
-        const [bg, color, dot] = map[status] || map['פתוחה'];
-        return <span className="badge" style={{ background: bg, color }}><span className="badge-dot" style={{ background: dot }}></span>{status}</span>;
-    }
+    <nav class="mobile-nav">
+        <button onclick="switchView('dashboard')" data-nav="dashboard" class="mobile-nav-item active"><i class="fa-solid fa-chart-pie text-lg"></i><span>דשבורד</span></button>
+        <button onclick="switchView('employees')" data-nav="employees" class="mobile-nav-item"><i class="fa-solid fa-users text-lg"></i><span>עובדים</span></button>
+        <button onclick="switchView('hours')" data-nav="hours" class="mobile-nav-item"><i class="fa-solid fa-clock text-lg"></i><span>שעות</span></button>
+        <button onclick="switchView('tasks')" data-nav="tasks" class="mobile-nav-item"><i class="fa-solid fa-list-check text-lg"></i><span>משימות</span></button>
+        <button onclick="switchView('inventory')" data-nav="inventory" class="mobile-nav-item"><i class="fa-solid fa-box text-lg"></i><span>מלאי</span></button>
+        <button onclick="switchView('orders')" data-nav="orders" class="mobile-nav-item"><i class="fa-solid fa-cart-plus text-lg"></i><span>הזמנות</span></button>
+    </nav>
 
-    function PriorityBadge({ priority }) {
-        const map = { 'דחופה': ['#fef2f2','#dc2626','exclamation-circle'], 'רגילה': ['#eff6ff','#2563eb','minus-circle'], 'נמוכה': ['#f8fafc','#64748b','arrow-circle-down'] };
-        const [bg, color, icon] = map[priority] || map['רגילה'];
-        return <span className="badge" style={{ background: bg, color }}><Icon name={icon} />{priority}</span>;
-    }
+    <!-- 💻 Desktop Sidebar -->
+    <nav class="desktop-sidebar">
+        <div class="px-6 py-8 flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded flex items-center justify-center text-yellow-400 font-black text-xl">B</div>
+            <span class="text-2xl font-bold">ביסקוטי ✨</span>
+        </div>
+        <div class="flex-grow px-2">
+            <a onclick="switchView('dashboard')" data-nav="dashboard" class="nav-item active"><i class="fa-solid fa-chart-pie w-5"></i> <span>דשבורד</span></a>
+            <a onclick="switchView('employees')" data-nav="employees" class="nav-item"><i class="fa-solid fa-users w-5"></i> <span>עובדים ו-CRM</span></a>
+            <a onclick="switchView('hours')" data-nav="hours" class="nav-item"><i class="fa-solid fa-clock w-5"></i> <span>שעות תקן</span></a>
+            <a onclick="switchView('tasks')" data-nav="tasks" class="nav-item"><i class="fa-solid fa-check-double w-5"></i> <span>משימות לדוד</span></a>
+            <a onclick="switchView('inventory')" data-nav="inventory" class="nav-item"><i class="fa-solid fa-box w-5"></i> <span>מלאי ירקות</span></a>
+            <a onclick="switchView('orders')" data-nav="orders" class="nav-item"><i class="fa-solid fa-basket-shopping w-5"></i> <span class="text-blue-600 font-bold">הזמנת ירקות</span></a>
+        </div>
+        <div class="p-6 border-t mt-auto text-center">
+            <p id="sync-time-desktop" class="text-[10px] text-gray-400 mb-2"></p>
+            <button onclick="triggerSync()" class="w-full flex items-center justify-center gap-2 p-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition font-bold">
+                <i id="sync-icon-desktop" class="fa-solid fa-arrows-rotate"></i> סנכרן נתונים
+            </button>
+        </div>
+    </nav>
 
-    // ===== LOGIN PAGE =====
-    function LoginPage({ onLogin }) {
-        const [username, setUsername] = useState('');
-        const [password, setPassword] = useState('');
-        const [loading, setLoading] = useState(false);
-        const [error, setError] = useState('');
-        const [showPass, setShowPass] = useState(false);
+    <!-- 🌐 Main Content -->
+    <main class="main-content">
+        
+        <!-- Dashboard -->
+        <div id="view-dashboard" class="view block">
+            <div class="flex justify-between items-end mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">סיכום ביצועים</h1>
+                <span id="display-date" class="text-gray-500 font-medium"></span>
+            </div>
 
-        const handleLogin = async () => {
-            if (!username.trim() || !password.trim()) { setError('יש למלא שם משתמש וסיסמה'); return; }
-            setLoading(true); setError('');
+            <div id="inventory-alert-banner" class="hidden mb-6"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="card bg-indigo-900 text-white border-none p-4 flex flex-col justify-between">
+                    <span class="text-xs font-bold opacity-70 uppercase mb-3 block">צפי סיום משמרות</span>
+                    <div class="space-y-3">
+                        <div class="bg-white/10 rounded-xl p-3">
+                            <div class="text-[10px] text-indigo-200 mb-1 font-bold">ממוצע שבועי</div>
+                            <div class="flex justify-around">
+                                <div><div class="text-[9px] opacity-60">בוקר</div><div class="text-xl font-black" id="dash-weekly-morn">--:--</div></div>
+                                <div><div class="text-[9px] opacity-60">אריזה</div><div class="text-xl font-black" id="dash-weekly-night">--:--</div></div>
+                            </div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-3">
+                            <div class="text-[10px] text-indigo-200 mb-1 font-bold">ממוצע חודשי</div>
+                            <div class="flex justify-around">
+                                <div><div class="text-[9px] opacity-60">בוקר</div><div class="text-xl font-black" id="dash-monthly-morn">--:--</div></div>
+                                <div><div class="text-[9px] opacity-60">אריזה</div><div class="text-xl font-black" id="dash-monthly-night">--:--</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-bold text-gray-500 mb-2 uppercase">מלאי תקין</span>
+                    <div class="gauge-container"><svg class="w-full h-full" viewBox="0 0 100 60"><path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="#f1f3f4" stroke-width="10"/><path id="gauge-inv" d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="#fbbc04" stroke-width="10" stroke-dasharray="0, 126"/><text x="50" y="45" text-anchor="middle" class="text-2xl font-black" id="gauge-inv-text">0%</text></svg></div>
+                </div>
+                
+                <div class="card flex flex-col items-center justify-center text-center">
+                    <span class="text-xs font-bold text-gray-500 mb-2 uppercase">עובדים פעילים</span>
+                    <div class="gauge-container"><svg class="w-full h-full" viewBox="0 0 100 60"><path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="#f1f3f4" stroke-width="10"/><path id="gauge-emp" d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="#4285f4" stroke-width="10" stroke-dasharray="0, 126"/><text x="50" y="45" text-anchor="middle" class="text-2xl font-black" id="gauge-emp-text">0</text></svg></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="card text-center py-8 border-r-4 border-r-green-500 shadow-sm"><div class="text-xs text-gray-400 mb-1 uppercase font-bold tracking-wider">סה"כ מכירות</div><div id="stat-sales" class="text-3xl font-black text-green-600">₪0</div></div>
+                <div class="card text-center py-8 border-r-4 border-r-blue-500 shadow-sm"><div class="text-xs text-gray-400 mb-1 uppercase font-bold tracking-wider">ממוצע שעות</div><div id="stat-hours" class="text-3xl font-black text-blue-600">0</div></div>
+            </div>
+        </div>
+
+        <!-- Employees View -->
+        <div id="view-employees" class="view hidden">
+            <header class="flex flex-col gap-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">ניהול עובדים</h2>
+                    <div class="flex gap-2">
+                         <button onclick="toggleDisplayMode('employees')" class="bg-white border p-2 rounded-lg text-gray-600"><i class="fa-solid fa-eye"></i></button>
+                         <div class="flex bg-white border rounded-lg overflow-hidden shadow-sm">
+                            <button id="btn-layout-emp-grid" onclick="setLayout('employees', 'grid')" class="px-3 py-2 text-sm"><i class="fa-solid fa-table-cells-large"></i></button>
+                            <button id="btn-layout-emp-list" onclick="setLayout('employees', 'list')" class="active px-3 py-2 text-sm border-r"><i class="fa-solid fa-list"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <div class="relative flex-grow"><i class="fa-solid fa-search absolute right-3 top-3 text-gray-300"></i><input type="text" id="emp-search" placeholder="חפש עובד..." oninput="renderEmployees()" class="pr-10 w-full rounded-xl border-gray-200 shadow-sm"></div>
+                    <select id="emp-filter-dept" onchange="renderEmployees()" class="w-1/3 rounded-xl border-gray-200 bg-white"><option value="all">הכל</option></select>
+                </div>
+            </header>
+            <div id="employees-grid" class="grid grid-cols-1 gap-3 transition-all duration-300"></div>
+        </div>
+
+        <!-- Hours View -->
+        <div id="view-hours" class="view hidden text-right">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-6">
+                    <div class="card bg-indigo-900 text-white border-none p-6 text-center">
+                        <h3 class="font-bold text-lg mb-6" id="hours-monthly-label">סיכום ממוצעים</h3>
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-white/10 rounded-xl p-4">
+                                <p class="text-[10px] text-indigo-300 uppercase mb-1">בוקר (06:00)</p>
+                                <div class="text-2xl font-black" id="res-monthly-morn">--:--</div>
+                            </div>
+                            <div class="bg-white/10 rounded-xl p-4">
+                                <p class="text-[10px] text-indigo-300 uppercase mb-1">אריזה (19:00)</p>
+                                <div class="text-2xl font-black" id="res-monthly-night">--:--</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white/10 rounded-lg p-3"><p class="text-[10px] opacity-70 mb-1">שעות/עובד</p><p class="text-lg font-bold" id="res-avg-h">0</p></div>
+                            <div class="bg-white/10 rounded-lg p-3"><p class="text-[10px] opacity-70 mb-1">פעילים</p><p class="text-lg font-bold" id="res-count">0</p></div>
+                        </div>
+                    </div>
+                    <div class="card p-0 overflow-hidden">
+                        <h3 class="font-bold p-4 bg-gray-50 border-b text-gray-700">סיום 7 ימים (צפי בוקר)</h3>
+                        <div class="overflow-x-auto"><table class="w-full text-sm text-center"><tbody id="shift-calc-body"></tbody></table></div>
+                    </div>
+                </div>
+                <div class="card p-0 overflow-hidden">
+                    <h3 class="font-bold p-4 bg-gray-50 border-b text-gray-700">היסטוריית דיווחים</h3>
+                    <div class="overflow-y-auto max-h-[500px] shadow-inner"><table class="w-full text-sm"><tbody id="hours-table-body"></tbody></table></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks View -->
+        <div id="view-tasks" class="view hidden">
+            <header class="flex justify-between items-center mb-6">
+                <button onclick="resetTasks()" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100">נקה משימות</button>
+                <button onclick="sendTasks()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg"><i class="fa-brands fa-whatsapp mr-1"></i> שלח לדוד</button>
+            </header>
+            <div id="tasks-grid" class="grid grid-cols-1 gap-3"></div>
+        </div>
+
+        <!-- Inventory View -->
+        <div id="view-inventory" class="view hidden">
+            <header class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">מלאי קישים</h2>
+                <button onclick="toggleDisplayMode('inventory')" class="bg-white border px-4 py-2 rounded-lg font-bold text-gray-600 shadow-sm">ערוך מינימום</button>
+            </header>
+            <div id="inventory-grid" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+        </div>
+
+        <!-- Orders View -->
+        <div id="view-orders" class="view hidden">
+            <header class="flex justify-between items-center mb-6">
+                <button onclick="clearOrders()" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl font-bold border border-red-100">נקה הכל</button>
+                <button onclick="sendOrderToEliyahu()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg"><i class="fa-brands fa-whatsapp mr-1"></i> שלח לאליהו</button>
+            </header>
+            <div id="orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </div>
+
+    </main>
+
+    <!-- CRM Modal -->
+    <div id="crm-modal" class="fixed inset-0 bg-black/60 z-[1050] items-end md:items-center justify-center hidden">
+        <div class="bg-white w-full max-w-lg md:rounded-2xl rounded-t-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] relative animate-[slideUp_0.3s_ease-out]">
+            <style>@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }</style>
+            
+            <div class="p-6 bg-gray-50 border-b relative pt-10 md:pt-6 text-right">
+                <div class="w-12 h-1.5 bg-gray-300 rounded-full absolute top-4 left-1/2 -translate-x-1/2 md:hidden"></div>
+                
+                <div id="crm-display-mode">
+                    <div class="flex items-center gap-3 mb-2"><h2 id="crm-name" class="text-2xl font-black text-gray-800">שם עובד</h2><span id="crm-id-badge" class="bg-blue-100 text-blue-800 text-lg px-3 py-1 rounded-lg font-black border border-blue-200"></span></div>
+                    <div class="flex flex-wrap gap-4 text-sm text-gray-500 font-medium">
+                        <div id="crm-val-position"></div><div id="crm-val-company"></div>
+                        <div class="text-blue-600 font-black">התחלה: <span id="crm-val-start">--:--</span></div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <div class="bg-green-50 text-green-700 px-3 py-2 rounded-xl text-xs font-bold border border-green-100 flex-1">תחילת עבודה: <span id="crm-val-start-date"></span></div>
+                        <div class="bg-purple-50 text-purple-700 px-3 py-2 rounded-xl text-xs font-bold border border-purple-100 flex-1 text-center">וותק: <span id="crm-val-seniority"></span></div>
+                    </div>
+                </div>
+
+                <div id="crm-edit-mode" class="hidden space-y-4">
+                    <input type="text" id="edit-emp-name" placeholder="שם מלא" class="font-black text-xl p-3 border rounded-xl w-full">
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div><label class="block mb-1 opacity-50 uppercase font-bold tracking-wider">מס' עובד (ID)</label><input type="text" id="edit-emp-id" class="rounded-xl border-gray-200"></div>
+                        <div><label class="block mb-1 opacity-50 uppercase font-bold tracking-wider">עמדה</label><input type="text" id="edit-emp-pos" class="rounded-xl border-gray-200"></div>
+                        <div><label class="block mb-1 opacity-50 uppercase font-bold tracking-wider">חברה</label><input type="text" id="edit-emp-company" class="rounded-xl border-gray-200"></div>
+                        <div><label class="block mb-1 opacity-50 uppercase font-bold tracking-wider">טלפון</label><input type="text" id="edit-emp-phone" class="rounded-xl border-gray-200"></div>
+                        <div><label class="block mb-1 opacity-50 font-black text-blue-600">שעת התחלה</label><input type="time" id="edit-emp-start" class="rounded-xl border-blue-200 border-2"></div>
+                        <div><label class="block mb-1 opacity-50 uppercase font-bold tracking-wider">תאריך התחלה</label><input type="date" id="edit-emp-start-date" class="rounded-xl border-gray-200"></div>
+                    </div>
+                    <div class="flex gap-2 pt-2"><button onclick="saveEmpEdit()" class="btn-google flex-1 py-3 rounded-xl shadow-lg">שמור</button><button onclick="toggleEditEmp(false)" class="bg-gray-200 px-4 py-3 rounded-xl font-bold flex-1">ביטול</button></div>
+                </div>
+
+                <div class="absolute left-4 top-6 flex gap-4"><button id="btn-edit-emp" onclick="toggleEditEmp(true)" class="text-gray-400 text-xl hover:text-blue-600 transition"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="closeCRM()" class="text-gray-400 text-3xl leading-none">&times;</button></div>
+            </div>
+
+            <div class="p-6 overflow-y-auto pb-12 md:pb-6 text-right">
+                <textarea id="crm-input" rows="2" class="p-4 border rounded-2xl shadow-inner w-full focus:ring-2 focus:ring-blue-100 outline-none transition" placeholder="תעד שיחה או הערה..."></textarea>
+                <button onclick="saveNote()" class="btn-google w-full mt-3 py-3 rounded-xl font-bold shadow-md">שמור הערה</button>
+                <div id="crm-history" class="mt-8 space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script>
+        const runServer = async (method, payload = null) => {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                return new Promise((resolve, reject) => { google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[method](payload); });
+            } else {
+                const url = `${APP_URL}?action=${method}&payload=${encodeURIComponent(JSON.stringify(payload))}&t=${Date.now()}`;
+                const res = await fetch(url, { redirect: 'follow' });
+                const json = await res.json();
+                if (json && json.status === 'error') throw new Error(json.message);
+                return json.data;
+            }
+        };
+
+        async function loadData() {
+            const syncD = document.getElementById('sync-time-desktop');
+            const syncM = document.getElementById('sync-status-mobile');
+            if(syncD) syncD.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> מסנכרן...`;
+            if(syncM) syncM.innerHTML = 'טוען...';
             try {
-                const res = await fetch(`${API_URL}?action=login&username=${encodeURIComponent(username.trim())}&password=${encodeURIComponent(password.trim())}`);
-                const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
-                    onLogin(data.user);
+                const data = await runServer('getBootstrap');
+                state.employees = data.employees || [];
+                state.hours = data.standardHours || []; 
+                state.inventory = data.inventory || [];
+                state.tasks = data.tasks || [];
+                
+                // Initialize orders if first load
+                if (state.orders.length === 0) {
+                    state.orders = state.inventory.map(i => ({ id: i.id, amountToOrder: "" }));
                 } else {
-                    setError('שם משתמש או סיסמה שגויים');
+                    // Update orders list in case inventory items changed
+                    state.inventory.forEach(invItem => {
+                        if (!state.orders.find(o => o.id === invItem.id)) {
+                            state.orders.push({ id: invItem.id, amountToOrder: "" });
+                        }
+                    });
                 }
-            } catch {
-                setError('שם משתמש או סיסמה שגויים');
-            }
-            setLoading(false);
-        };
+                
+                const now = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
+                if(syncD) syncD.innerHTML = `<i class="fa-solid fa-check-circle text-green-500"></i> סונכרן ${now}`;
+                if(syncM) syncM.innerHTML = `עודכן ${now}`;
+                
+                populateDeptFilter();
+                renderAll();
+            } catch (e) { showToast("שגיאת סנכרון", 'bg-red-600'); }
+        }
 
-        const handleKey = (e) => { if (e.key === 'Enter') handleLogin(); };
+        async function triggerSync() {
+            const iconD = document.getElementById('sync-icon-desktop');
+            const iconM = document.getElementById('sync-icon-mobile');
+            if(iconD) iconD.classList.add('animate-spin');
+            if(iconM) iconM.classList.add('animate-spin');
+            await loadData();
+            if(iconD) iconD.classList.remove('animate-spin');
+            if(iconM) iconM.classList.remove('animate-spin');
+        }
 
-        return (
-            <div className="login-page">
-                <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                    <div style={{ width: 72, height: 72, borderRadius: 20, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 32px rgba(29,78,216,0.3)' }}>
-                        <Icon name="wrench" style={{ color: 'white', fontSize: 28 }} />
-                    </div>
-                    <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)' }}>מערכת אחזקה</h1>
-                    <p style={{ color: 'var(--muted)', marginTop: 6, fontSize: 14 }}>כניסה למערכת</p>
-                </div>
+        function switchView(id) {
+            document.querySelectorAll('.view').forEach(v => { v.classList.add('hidden'); v.classList.remove('block'); });
+            const t = document.getElementById(`view-${id}`); if(t) { t.classList.remove('hidden'); t.classList.add('block'); }
+            document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll(`[data-nav="${id}"]`).forEach(n => n.classList.add('active'));
+            window.scrollTo(0, 0);
+        }
 
-                <div className="login-box">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>שם משתמש</label>
-                            <div style={{ position: 'relative' }}>
-                                <Icon name="user" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14 }} />
-                                <input className="input" type="text" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={handleKey} placeholder="הכנס שם משתמש" style={{ paddingRight: 36 }} autoComplete="username" />
-                            </div>
-                        </div>
+        function toggleDisplayMode(v) {
+            displayModes[v] = !displayModes[v];
+            const g = document.getElementById(`${v}-grid`);
+            if(g) g.classList.toggle('view-mode-active', displayModes[v]);
+        }
 
-                        <div>
-                            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>סיסמה</label>
-                            <div style={{ position: 'relative' }}>
-                                <Icon name="lock" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14 }} />
-                                <input className="input" type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKey} placeholder="הכנס סיסמה" style={{ paddingRight: 36, paddingLeft: 36 }} autoComplete="current-password" />
-                                <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: 14 }}>
-                                    <Icon name={showPass ? 'eye-slash' : 'eye'} />
-                                </button>
-                            </div>
-                        </div>
+        function setLayout(v, l) {
+            layouts[v] = l;
+            const g = document.getElementById(`${v}-grid`);
+            if(!g) return;
+            const btns = document.querySelectorAll(`[id^="btn-layout-${v.substring(0,3)}"]`);
+            btns.forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`btn-layout-${v.substring(0,3)}-${l}`);
+            if(btn) btn.classList.add('active');
+            
+            if (l === 'list') g.className = 'grid grid-cols-1 gap-3';
+            else g.className = v === 'employees' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4';
+            renderAll();
+        }
 
-                        {error && (
-                            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', color: '#dc2626', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <Icon name="exclamation-circle" /> {error}
-                            </div>
-                        )}
+        function sendTasks() {
+            const dateStr = new Date().toLocaleDateString('he-IL');
+            let text = `*משימות יומיות*\nתאריך: ${dateStr}\n\n`;
+            state.tasks.forEach(t => text += `${t.name}: ${t.done > 0 ? t.done : '0'}\n\n`);
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
 
-                        <button className="btn btn-blue" style={{ width: '100%', padding: '14px', fontSize: 16, marginTop: 4 }} onClick={handleLogin} disabled={loading}>
-                            {loading ? <><Icon name="spinner" className="spinner" /> מתחבר...</> : <><Icon name="sign-in-alt" /> כניסה</>}
-                        </button>
-                    </div>
-                </div>
+        function sendOrderToEliyahu() {
+            const orders = state.orders.filter(o => o.amountToOrder > 0);
+            if (!orders.length) return showToast("לא הוזנו כמויות", 'bg-red-600');
+            const dateStr = new Date().toLocaleDateString('he-IL');
+            let text = `*הזמנת ירקות מחלקת קישים*\nתאריך: ${dateStr}\n\n`;
+            orders.forEach(o => text += `${o.id}: ${o.amountToOrder}\n\n`);
+            window.open(`https://wa.me/972524048099?text=${encodeURIComponent(text)}`, '_blank');
+        }
 
-                <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 24, textAlign: 'center' }}>
-                    לא זוכר סיסמה? פנה למנהל המערכת
-                </p>
-            </div>
-        );
-    }
+        function clearOrders() { if(confirm("לנקות את ההזמנה?")) { state.orders.forEach(o => o.amountToOrder = ""); renderOrders(); } }
 
-    // ===== MAIN APP =====
-    function App() {
-        const [currentUser, setCurrentUser] = useState(null);
-        const [authChecked, setAuthChecked] = useState(false);
-        const [tickets, setTickets] = useState([]);
-        const [syncStatus, setSyncStatus] = useState('מחובר');
-        const [activeTab, setActiveTab] = useState(null);
+        function calculateSeniority(d) {
+            if (!d) return "-";
+            const s = new Date(d), n = new Date(); if (isNaN(s.getTime())) return "-";
+            let y = n.getFullYear() - s.getFullYear(), m = n.getMonth() - s.getMonth();
+            if (m < 0) { y--; m += 12; }
+            if (y === 0) return `${m} חודשים`;
+            return `${y} שנים ו-${m} ח'`;
+        }
 
-        // Check saved session
-        useEffect(() => {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try { setCurrentUser(JSON.parse(saved)); }
-                catch { localStorage.removeItem(STORAGE_KEY); }
-            }
-            setAuthChecked(true);
-        }, []);
-
-        useEffect(() => {
-            if (currentUser) {
-                loadTickets();
-                // Set default tab based on role
-                if (currentUser.role === 'requester') setActiveTab('my');
-                else if (currentUser.role === 'worker') setActiveTab('tasks');
-                else setActiveTab('dashboard');
-            }
-        }, [currentUser]);
-
-        const loadTickets = async () => {
-            setSyncStatus('טוען...');
-            try {
-                const res = await fetch(API_URL);
-                const data = await res.json();
-                if (!data.error) { setTickets(data.sort((a,b) => new Date(b.date)-new Date(a.date))); setSyncStatus('מעודכן'); }
-                else setSyncStatus('שגיאה');
-            } catch { setSyncStatus('שגיאת חיבור'); }
-        };
-
-        const syncToSheet = async (action, ticket) => {
-            setSyncStatus('מסנכרן...');
-            try {
-                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, ticket }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' });
-                setSyncStatus('מעודכן');
-            } catch { setSyncStatus('שגיאת סנכרון'); }
-        };
-
-        const handleAdd = (t) => {
-            const ticket = { ...t, id: generateId(), status: 'פתוחה', date: new Date().toISOString().split('T')[0], tags: [], managerNotes: [], openedBy: currentUser.username, openedByName: currentUser.name };
-            setTickets([ticket, ...tickets]);
-            syncToSheet('ADD', ticket);
-        };
-
-        const handleEdit = (id, data) => {
-            const updated = tickets.map(t => t.id === id ? { ...t, ...data } : t);
-            setTickets(updated);
-            syncToSheet('UPDATE', updated.find(t => t.id === id));
-        };
-
-        const handleDelete = (id) => {
-            setTickets(tickets.filter(t => t.id !== id));
-            syncToSheet('DELETE', { id });
-        };
-
-        const updateStatus = (id, status) => {
-            const updated = tickets.map(t => t.id === id ? { ...t, status } : t);
-            setTickets(updated);
-            syncToSheet('UPDATE', updated.find(t => t.id === id));
-        };
-
-        const addNote = (id, text) => {
-            const note = { id: Date.now(), text, date: new Date().toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' }), by: currentUser.name };
-            const updated = tickets.map(t => t.id === id ? { ...t, managerNotes: [...(t.managerNotes||[]), note] } : t);
-            setTickets(updated);
-            syncToSheet('UPDATE', updated.find(t => t.id === id));
-        };
-
-        const toggleTag = (id, tag) => {
-            const updated = tickets.map(t => {
-                if (t.id !== id) return t;
-                const curr = t.tags || [];
-                return { ...t, tags: curr.includes(tag) ? curr.filter(g => g !== tag) : [...curr, tag] };
+        function renderEmployees() {
+            const grid = document.getElementById('employees-grid'); if(!grid) return;
+            const q = (document.getElementById('emp-search')?.value || "").toLowerCase();
+            const dept = document.getElementById('emp-filter-dept')?.value || "all";
+            grid.innerHTML = '';
+            state.employees.filter(e => {
+                const m = [e.name, e.position, e.id, e.company].some(f => String(f||"").toLowerCase().includes(q));
+                return m && (dept === 'all' || e.position === dept);
+            }).forEach(e => {
+                const c = document.createElement('div');
+                c.onclick = () => { if(!displayModes.employees) openCRM(e); };
+                if (layouts.employees === 'list') {
+                    c.className = 'card cursor-pointer flex flex-col sm:flex-row items-center justify-between p-4 gap-3 shadow-sm border-gray-100';
+                    c.innerHTML = `<div class="flex items-center gap-4 w-full sm:w-1/3 text-right"><span class="bg-blue-50 text-blue-700 text-lg px-3 py-1 rounded-xl font-black border border-blue-100">#${e.id}</span><div><h4 class="font-black text-gray-800">${e.name}</h4><p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">${e.position}</p></div></div><div class="text-xs text-blue-600 font-black flex-grow text-center"><i class="fa-solid fa-clock ml-1"></i>${e.startTime || "--:--"}</div><div class="flex items-center gap-4 w-full sm:w-auto justify-end"> ${e.phone ? `<a href="tel:${e.phone}" class="bg-blue-600 text-white px-5 py-2 rounded-full font-black text-xs shadow-md" onclick="event.stopPropagation()">חייג</a>` : ''} </div>`;
+                } else {
+                    c.className = 'card cursor-pointer hover:border-blue-300 shadow-sm text-right';
+                    c.innerHTML = `<div class="flex justify-between items-start mb-4"><div><h4 class="font-black">${e.name}</h4><p class="text-xs opacity-50">${e.position}</p></div><span class="bg-blue-50 text-blue-700 text-lg px-2 py-1 rounded-xl font-black border border-blue-100">#${e.id}</span></div><div class="text-xs space-y-1 mb-4 font-medium"><div><i class="fa-solid fa-clock ml-2 opacity-30"></i> התחלה: ${e.startTime || "--:--"}</div><div><i class="fa-solid fa-calendar ml-2 opacity-30"></i> וותק: ${calculateSeniority(e.startDate)}</div></div><div class="flex justify-between items-center pt-3 border-t"> <span class="text-[10px] opacity-40 font-bold"><i class="fa-solid fa-note-sticky ml-1"></i>${e.notes.length} הערות</span> ${e.phone ? `<a href="tel:${e.phone}" class="text-blue-600 text-lg" onclick="event.stopPropagation()"><i class="fa-solid fa-phone"></i></a>` : ''} </div>`;
+                }
+                grid.appendChild(c);
             });
-            setTickets(updated);
-            syncToSheet('UPDATE', updated.find(t => t.id === id));
-        };
+        }
 
-        const handleLogout = () => {
-            localStorage.removeItem(STORAGE_KEY);
-            setCurrentUser(null);
-            setTickets([]);
-        };
+        function renderOrders() {
+            const grid = document.getElementById('orders-grid'); if(!grid) return;
+            grid.innerHTML = '';
+            state.orders.forEach(o => {
+                const inv = state.inventory.find(i => i.id === o.id) || {qty: '?', min: '?'};
+                const low = Number(inv.qty) < Number(inv.min);
+                const c = document.createElement('div');
+                c.className = `card flex items-center justify-between p-4 ${low ? 'bg-orange-50 border-orange-200' : 'border-gray-100 shadow-sm'}`;
+                c.innerHTML = `<div class="w-1/2 text-right"><h4 class="font-black text-gray-800">${o.id}</h4><p class="text-[10px] text-gray-400 font-bold">במלאי: ${inv.qty}</p></div><input type="number" placeholder="0" value="${o.amountToOrder}" oninput="state.orders.find(x=>x.id==='${o.id}').amountToOrder=this.value" class="w-20 text-center font-black text-blue-700 border-2 border-blue-200 bg-white p-2 rounded-xl shadow-sm outline-none focus:border-blue-500 transition">`;
+                grid.appendChild(c);
+            });
+        }
 
-        if (!authChecked) return null;
-        if (!currentUser) return <LoginPage onLogin={u => setCurrentUser(u)} />;
+        function updateShiftCalc() {
+            const count = state.employees.length || 1;
+            const active = (state.hours || []).filter(h => Number(h.hours) > 0);
+            const sorted = [...active].sort((a,b) => new Date(b.date) - new Date(a.date));
+            const sorted7 = sorted.slice(0, 7);
+            const table = document.getElementById('shift-calc-body');
+            const fmt = (m) => `${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(Math.round(m%60)).padStart(2,'0')}`;
 
-        const isSynced = syncStatus === 'מעודכן' || syncStatus === 'מחובר';
-        const rc = ROLE_COLORS[currentUser.role] || ROLE_COLORS.requester;
+            if(table) {
+                table.innerHTML = '';
+                sorted7.forEach(d => {
+                    const mins = 6*60 + ((d.hours/count)*60);
+                    const row = document.createElement('tr'); row.className = "border-b hover:bg-gray-50 transition";
+                    row.innerHTML = `<td class="p-4 opacity-50 font-bold">${d.date.split('-').reverse().join('.')}</td><td class="p-4 text-center font-black text-gray-700">${d.hours} ש'</td><td class="p-4 text-left font-black text-blue-600">${fmt(mins)}</td>`;
+                    table.appendChild(row);
+                });
+            }
 
-        // My tickets (for requester)
-        const myTickets = tickets.filter(t => t.openedBy === currentUser.username);
-        // Active tickets (for worker)
-        const activeTickets = tickets.filter(t => t.status !== 'טופלה');
+            if (sorted7.length > 0) {
+                const avgWeeklyH = sorted7.reduce((s, h) => s + Number(h.hours), 0) / sorted7.length;
+                const empWeeklyMins = (avgWeeklyH/count)*60;
+                const elW1 = document.getElementById('dash-weekly-morn');
+                const elW2 = document.getElementById('dash-weekly-night');
+                if(elW1) elW1.textContent = fmt(6*60 + empWeeklyMins);
+                if(elW2) elW2.textContent = fmt(19*60 + empWeeklyMins);
+            }
 
-        // Tabs per role
-        const tabs = {
-            requester: [
-                { id: 'new', icon: 'plus-circle', label: 'קריאה חדשה' },
-                { id: 'my', icon: 'list', label: `הקריאות שלי (${myTickets.length})` },
-            ],
-            worker: [
-                { id: 'tasks', icon: 'tools', label: `משימות (${activeTickets.length})` },
-                { id: 'done', icon: 'check-circle', label: 'טופלו' },
-            ],
-            manager: [
-                { id: 'dashboard', icon: 'chart-bar', label: 'דשבורד' },
-                { id: 'all', icon: 'list', label: 'כל הקריאות' },
-                { id: 'users', icon: 'users', label: 'משתמשים' },
-            ],
-        };
+            const currentYM = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+            const mReports = active.filter(h => h.date.startsWith(currentYM));
+            if(mReports.length > 0) {
+                const avgH = mReports.reduce((s, h) => s + Number(h.hours), 0) / mReports.length;
+                const empMins = (avgH/count)*60;
+                
+                const ids = ['dash-monthly-morn', 'dash-monthly-night', 'res-monthly-morn', 'res-monthly-night'];
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.textContent = fmt((id.includes('morn') ? 6 : 19)*60 + empMins);
+                });
 
-        const roleTabs = tabs[currentUser.role] || [];
-        const tabColors = { requester: '#1d4ed8', worker: '#ea580c', manager: '#7c3aed' };
-        const tabColor = tabColors[currentUser.role];
+                if(document.getElementById('res-avg-h')) document.getElementById('res-avg-h').textContent = avgH.toFixed(1);
+                if(document.getElementById('stat-hours')) document.getElementById('stat-hours').textContent = avgH.toFixed(1);
+                if(document.getElementById('res-count')) document.getElementById('res-count').textContent = count;
+                if(document.getElementById('gauge-emp-text')) document.getElementById('gauge-emp-text').textContent = count;
+            }
+        }
 
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-                {/* Header */}
-                <div className="app-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: rc.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Icon name="wrench" style={{ color: 'white', fontSize: 13 }} />
-                        </div>
-                        <span style={{ fontWeight: 800, fontSize: 15 }}>מערכת אחזקה</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: isSynced ? '#f0fdf4' : '#fefce8', color: isSynced ? '#15803d' : '#a16207', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>
-                            <span className={isSynced ? '' : 'pulse'} style={{ width: 6, height: 6, borderRadius: '50%', background: isSynced ? '#22c55e' : '#eab308', display: 'inline-block' }}></span>
-                            {syncStatus}
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {/* User badge */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: rc.bg, border: `1px solid`, borderColor: rc.color + '40', borderRadius: 20, padding: '4px 10px 4px 4px' }}>
-                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: rc.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'white' }}>
-                                {currentUser.name?.charAt(0) || '?'}
-                            </div>
-                            <div>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: rc.color, lineHeight: 1 }}>{currentUser.name}</div>
-                                <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1, marginTop: 1 }}>{rc.label}</div>
-                            </div>
-                        </div>
-                        <button onClick={handleLogout} style={{ border: 'none', background: 'transparent', color: '#94a3b8', fontSize: 18, cursor: 'pointer', padding: 4 }} title="יציאה">
-                            <Icon name="sign-out-alt" />
-                        </button>
-                    </div>
-                </div>
+        function updateGauges() {
+            const total = state.inventory.length;
+            const ok = state.inventory.filter(i => Number(i.qty) >= Number(i.min)).length;
+            const perc = total ? Math.round((ok/total)*100) : 0;
+            const elInv = document.getElementById('gauge-inv');
+            const elInvTxt = document.getElementById('gauge-inv-text');
+            if(elInv) elInv.setAttribute('stroke-dasharray', `${(126 * perc) / 100}, 126`);
+            if(elInvTxt) elInvTxt.textContent = perc + '%';
+            
+            const elEmp = document.getElementById('gauge-emp');
+            if(elEmp) elEmp.setAttribute('stroke-dasharray', `${(126 * Math.min((state.employees.length/20)*100, 100)) / 100}, 126`);
+            
+            const curYM = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+            const reports = (state.hours || []).filter(h => h.date.startsWith(curYM) && Number(h.sales) > 0);
+            const elSales = document.getElementById('stat-sales');
+            if(reports.length > 0 && elSales) elSales.textContent = '₪' + reports.reduce((s, h) => s + Number(h.sales), 0).toLocaleString();
+        }
 
-                {/* Content */}
-                <div className="scroll-area hide-scroll" style={{ padding: '16px' }}>
-                    {/* REQUESTER */}
-                    {currentUser.role === 'requester' && activeTab === 'new' && (
-                        <NewTicketForm onAdd={ticket => { handleAdd(ticket); setActiveTab('my'); }} onCancel={() => setActiveTab('my')} />
-                    )}
-                    {currentUser.role === 'requester' && activeTab === 'my' && (
-                        <MyTickets tickets={myTickets} onEdit={handleEdit} onDelete={handleDelete} onNew={() => setActiveTab('new')} currentUser={currentUser} />
-                    )}
-
-                    {/* WORKER */}
-                    {currentUser.role === 'worker' && activeTab === 'tasks' && (
-                        <WorkerTasks tickets={activeTickets} updateStatus={updateStatus} />
-                    )}
-                    {currentUser.role === 'worker' && activeTab === 'done' && (
-                        <DoneTickets tickets={tickets.filter(t => t.status === 'טופלה')} updateStatus={updateStatus} />
-                    )}
-
-                    {/* MANAGER */}
-                    {currentUser.role === 'manager' && activeTab === 'dashboard' && (
-                        <ManagerDashboard tickets={tickets} />
-                    )}
-                    {currentUser.role === 'manager' && activeTab === 'all' && (
-                        <AllTickets tickets={tickets} addNote={addNote} toggleTag={toggleTag} updateStatus={updateStatus} currentUser={currentUser} />
-                    )}
-                    {currentUser.role === 'manager' && activeTab === 'users' && (
-                        <UsersManager apiUrl={API_URL} />
-                    )}
-                </div>
-
-                {/* Bottom nav */}
-                <div className="bottom-nav">
-                    {roleTabs.map(tab => (
-                        <button key={tab.id} className={`nav-item ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
-                            <div className="nav-icon" style={{ background: activeTab === tab.id ? (rc.bg) : 'transparent' }}>
-                                <Icon name={tab.icon} style={{ color: activeTab === tab.id ? tabColor : '#94a3b8' }} />
-                            </div>
-                            <span className="nav-label" style={{ color: activeTab === tab.id ? tabColor : '#94a3b8', fontSize: 10 }}>{tab.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
-    // ===== NEW TICKET FORM =====
-    function NewTicketForm({ onAdd, onCancel }) {
-        const [form, setForm] = useState({ description: '', location: '', priority: 'רגילה', image: null });
-        const fileRef = useRef(null);
-
-        const resizeImage = (file) => new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let [w, h] = [img.width, img.height];
-                    if (w > 800) { h = h * 800 / w; w = 800; }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.7));
-                };
-                img.src = e.target.result;
+        function openCRM(e) {
+            state.selectedEmp = e; toggleEditEmp(false);
+            const mappings = {
+                'crm-name': e.name, 'crm-id-badge': '#' + e.id, 'crm-val-position': e.position,
+                'crm-val-company': e.company, 'crm-val-start': e.startTime || '--:--',
+                'crm-val-start-date': e.startDate ? new Date(e.startDate).toLocaleDateString('he-IL') : '--/--/----',
+                'crm-val-seniority': calculateSeniority(e.startDate)
             };
-            reader.readAsDataURL(file);
-        });
+            Object.keys(mappings).forEach(id => { const el = document.getElementById(id); if(el) el.textContent = mappings[id]; });
+            const elModal = document.getElementById('crm-modal');
+            if(elModal) { elModal.classList.remove('hidden'); elModal.classList.add('flex'); }
+            renderNotes();
+        }
 
-        const handleSubmit = () => {
-            if (!form.location.trim() || !form.description.trim()) return;
-            onAdd(form);
+        function closeCRM() { 
+            const elModal = document.getElementById('crm-modal');
+            if(elModal) { elModal.classList.add('hidden'); elModal.classList.remove('flex'); }
+        }
+
+        function toggleEditEmp(s) {
+            const d = document.getElementById('crm-display-mode'), eM = document.getElementById('crm-edit-mode'), b = document.getElementById('btn-edit-emp');
+            if(!d || !eM || !b) return;
+            if(s) {
+                d.classList.add('hidden'); eM.classList.remove('hidden'); b.classList.add('hidden');
+                document.getElementById('edit-emp-name').value = state.selectedEmp.name;
+                document.getElementById('edit-emp-id').value = state.selectedEmp.id;
+                document.getElementById('edit-emp-pos').value = state.selectedEmp.position;
+                document.getElementById('edit-emp-company').value = state.selectedEmp.company;
+                document.getElementById('edit-emp-phone').value = state.selectedEmp.phone;
+                document.getElementById('edit-emp-start').value = state.selectedEmp.startTime;
+                document.getElementById('edit-emp-start-date').value = state.selectedEmp.startDate;
+            } else { d.classList.remove('hidden'); eM.classList.add('hidden'); b.classList.remove('hidden'); }
+        }
+
+        async function saveEmpEdit() {
+            const n = document.getElementById('edit-emp-name').value; if(!n) return;
+            const newEmp = { ...state.selectedEmp, name: n, id: document.getElementById('edit-emp-id').value, position: document.getElementById('edit-emp-pos').value, company: document.getElementById('edit-emp-company').value, phone: document.getElementById('edit-emp-phone').value, startTime: document.getElementById('edit-emp-start').value, startDate: document.getElementById('edit-emp-start-date').value };
+            showToast('שומר ומסנכרן...');
+            try { await runServer('saveEmployeeData', newEmp); await loadData(); openCRM(state.employees.find(x=>x.id===newEmp.id)); showToast('נשמר בהצלחה!', 'bg-green-600'); } catch(e) { showToast('שגיאה בשמירה', 'bg-red-600'); }
+        }
+
+        async function saveNote() {
+            const i = document.getElementById('crm-input'); if(!i || !i.value) return;
+            try { await runServer('saveNoteToEmployee', { employeeId: state.selectedEmp.id, note: i.value }); state.selectedEmp.notes.unshift({ text: i.value, date: new Date().toLocaleString('he-IL') }); i.value = ''; renderNotes(); renderEmployees(); showToast('הערה נשמרה', 'bg-green-600'); } catch (e) { showToast('שגיאה בשמירה'); }
+        }
+
+        function renderNotes() {
+            const h = document.getElementById('crm-history'); if(!h) return;
+            h.innerHTML = '';
+            state.selectedEmp.notes.forEach((n, i) => {
+                const item = document.createElement('div'); item.className = 'bg-gray-100 p-4 rounded-xl text-sm relative group text-right';
+                item.innerHTML = `<p class="text-gray-700 font-medium">${n.text}</p><span class="text-[10px] opacity-40 font-bold block mt-2">${n.date}</span><button onclick="deleteNote(${i})" class="absolute left-3 top-4 opacity-0 group-hover:opacity-100 transition text-gray-300 hover:text-red-500">&times;</button>`;
+                h.appendChild(item);
+            });
+        }
+        async function deleteNote(idx) { if(!confirm('למחוק את ההערה?')) return; try { await runServer('deleteNoteFromEmployee', { empId: state.selectedEmp.id, noteIndex: idx }); state.selectedEmp.notes.splice(idx,1); renderNotes(); renderEmployees(); } catch(e) {} }
+
+        function renderTasks() {
+            const g = document.getElementById('tasks-grid'); if(!g) return;
+            g.innerHTML = '';
+            state.tasks.forEach(t => {
+                const c = document.createElement('div'); c.className = `card flex items-center gap-4 shadow-sm border-gray-100 ${t.checked ? 'opacity-40 grayscale bg-gray-50' : ''}`;
+                c.innerHTML = `<input type="checkbox" ${t.checked ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-7 h-7 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500"><div class="flex-grow font-black text-gray-800 text-right">${t.name}</div><input type="number" value="${t.done||0}" oninput="updateTaskDone(${t.id}, this.value)" class="w-16 p-2 text-center border rounded-lg font-black text-blue-700">`;
+                g.appendChild(c);
+            });
+        }
+        async function toggleTask(id) { const t = state.tasks.find(x=>x.id===id); if(t) { t.checked = !t.checked; renderTasks(); await runServer('updateTask', t); } }
+        async function updateTaskDone(id, v) { const t = state.tasks.find(x=>x.id===id); if(t) { t.done = Number(v); t.checked = (t.done > 0); renderTasks(); await runServer('updateTask', t); } }
+        async function resetTasks() { if(confirm('לאפס את כל המשימות ל-0?')) { try { await runServer('resetAllTasks'); state.tasks.forEach(t=>{t.done=0;t.checked=false;}); renderTasks(); showToast("משימות אופסו", "bg-blue-600"); } catch(e){} } }
+
+        function renderInventory() {
+            const g = document.getElementById('inventory-grid'); if(!g) return;
+            g.innerHTML = '';
+            state.inventory.forEach(i => {
+                const low = Number(i.qty) < Number(i.min);
+                const c = document.createElement('div'); c.className = `card shadow-sm ${low ? 'border-orange-300 bg-orange-50' : 'border-gray-100'}`;
+                c.innerHTML = `<div class="flex justify-between items-center mb-3"><h4 class="font-black text-gray-800 text-right">${i.id}</h4><span class="text-[10px] px-2 py-1 rounded-lg font-black ${low ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-500'}">${low ? 'חסר' : 'תקין'}</span></div><div class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600"><span>מלאי נוכחי:</span><input type="number" value="${i.qty}" oninput="updateInv('${i.id}', this.value, undefined)" class="w-20 p-1 border rounded-lg font-black text-blue-700 bg-white"></div><div class="flex items-center justify-between gap-2 text-xs mt-3 opacity-50 font-bold"><span>מינימום:</span><input type="number" value="${i.min}" oninput="updateInv('${i.id}', undefined, this.value)" class="w-20 p-1 border rounded-lg"></div>`;
+                g.appendChild(c);
+            });
+        }
+        async function updateInv(id, q, m) {
+            const i = state.inventory.find(x=>x.id===id); if(!i) return;
+            if(q!==undefined) i.qty = q; if(m!==undefined) i.min = m; renderInventory(); renderOrders(); updateGauges();
+            await runServer('updateInventory', {id: i.id, qty: i.qty, min: i.min});
+        }
+
+        function populateDeptFilter() {
+            const s = document.getElementById('emp-filter-dept'); if(!s) return;
+            const d = [...new Set(state.employees.map(e => e.position))].filter(Boolean).sort();
+            s.innerHTML = '<option value="all">כל העמדות</option>';
+            d.forEach(x => { const opt = document.createElement('option'); opt.value = x; opt.textContent = x; s.appendChild(opt); });
+        }
+
+        function renderHoursHistory() {
+            const b = document.getElementById('hours-table-body'); if(!b) return;
+            b.innerHTML = '';
+            [...(state.hours || [])].filter(h => h.hours > 0).sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(h => {
+                const row = document.createElement('tr'); row.className = 'border-b hover:bg-gray-50 transition';
+                row.innerHTML = `<td class="p-4 opacity-50 font-bold">${h.date.split('-').reverse().join('.')}</td><td class="p-4 font-black text-center text-gray-700">₪${h.sales.toLocaleString()}</td><td class="p-4 text-left font-black text-blue-600">${h.hours} ש'</td>`;
+                b.appendChild(row);
+            });
+        }
+
+        function renderAll() { 
+            renderEmployees(); 
+            renderHoursHistory(); 
+            renderTasks(); 
+            renderInventory(); 
+            renderOrders(); 
+            updateGauges(); 
+            updateShiftCalc(); 
+        }
+
+        window.onload = () => { 
+            const elDate = document.getElementById('display-date');
+            if(elDate) elDate.textContent = new Date().toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            loadData(); 
+            
+            const elModal = document.getElementById('crm-modal');
+            if(elModal) {
+                let ty = 0;
+                elModal.addEventListener('touchstart', e => ty = e.touches[0].clientY);
+                elModal.addEventListener('touchend', e => { if (e.changedTouches[0].clientY - ty > 100) closeCRM(); });
+            }
         };
-
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <h2 style={{ fontWeight: 800, fontSize: 20 }}>קריאה חדשה</h2>
-
-                <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>מיקום במפעל</label>
-                    <input className="input" type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} placeholder="לדוגמה: קו אריזה 2" />
-                </div>
-
-                <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>רמת דחיפות</label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        {[
-                            { v: 'נמוכה', color: '#64748b', activeBg: '#f1f5f9' },
-                            { v: 'רגילה', color: 'var(--blue)', activeBg: '#eff6ff' },
-                            { v: 'דחופה', color: 'var(--red)', activeBg: '#fef2f2' },
-                        ].map(({ v, color, activeBg }) => (
-                            <button key={v} className="priority-btn" onClick={() => setForm({...form, priority: v})}
-                                style={{ borderColor: form.priority === v ? color : 'var(--border)', background: form.priority === v ? activeBg : 'white', color: form.priority === v ? color : 'var(--muted)' }}>
-                                {v}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>תיאור הבעיה</label>
-                    <textarea className="input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{ height: 100, resize: 'none' }} placeholder="תאר את התקלה בפירוט..."></textarea>
-                </div>
-
-                <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>תמונה מהשטח</label>
-                    <button onClick={() => fileRef.current.click()} style={{ width: '100%', padding: '12px', border: '1.5px dashed var(--border)', borderRadius: 12, background: '#f9fafb', color: 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'Heebo', fontSize: 14 }}>
-                        <Icon name="camera" /> {form.image ? 'החלף תמונה' : 'צלם / בחר תמונה'}
-                    </button>
-                    <input type="file" accept="image/*" capture="environment" onChange={async e => { const f = e.target.files[0]; if(f) setForm({...form, image: await resizeImage(f)}); }} ref={fileRef} style={{ display: 'none' }} />
-                    {form.image && (
-                        <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
-                            <img src={form.image} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10 }} alt="" />
-                            <button onClick={() => setForm({...form, image: null})} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--red)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 10 }}>✕</button>
-                        </div>
-                    )}
-                </div>
-
-                <button className="btn btn-blue" style={{ width: '100%', padding: '14px', fontSize: 16 }} onClick={handleSubmit}>
-                    <Icon name="paper-plane" /> שלח קריאה
-                </button>
-            </div>
-        );
-    }
-
-    // ===== MY TICKETS (Requester) =====
-    function MyTickets({ tickets, onEdit, onDelete, onNew }) {
-        const [editTicket, setEditTicket] = useState(null);
-
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h2 style={{ fontWeight: 800, fontSize: 20 }}>הקריאות שלי</h2>
-                    <span style={{ background: '#eff6ff', color: 'var(--blue)', padding: '3px 12px', borderRadius: 20, fontWeight: 700, fontSize: 13 }}>{tickets.length}</span>
-                </div>
-
-                {tickets.map(ticket => (
-                    <div key={ticket.id} className="ticket-card">
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            {ticket.image && <img src={ticket.image} style={{ width: 58, height: 58, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} alt="" />}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 4 }}>{ticket.id}</span>
-                                    <div style={{ display: 'flex', gap: 6 }}>
-                                        <button onClick={() => setEditTicket(ticket)} style={{ border: 'none', background: '#eff6ff', color: 'var(--blue)', borderRadius: 8, padding: '5px 8px', cursor: 'pointer', fontSize: 13 }}><Icon name="edit" /></button>
-                                        <button onClick={() => { if(confirm('למחוק?')) onDelete(ticket.id); }} style={{ border: 'none', background: '#fef2f2', color: 'var(--red)', borderRadius: 8, padding: '5px 8px', cursor: 'pointer', fontSize: 13 }}><Icon name="trash" /></button>
-                                    </div>
-                                </div>
-                                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 5 }}>{ticket.location}</div>
-                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 5 }}>
-                                    <StatusBadge status={ticket.status} />
-                                    <PriorityBadge priority={ticket.priority} />
-                                </div>
-                                <p style={{ color: 'var(--muted)', fontSize: 13, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ticket.description}</p>
-                                {ticket.managerNotes?.length > 0 && (
-                                    <div style={{ marginTop: 8, background: '#faf5ff', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--purple)' }}>
-                                        <Icon name="comment-dots" /> {ticket.managerNotes.length} הערות מנהל
-                                    </div>
-                                )}
-                                <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>{ticket.date}</span>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-
-                {tickets.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '48px 24px', background: '#f8fafc', borderRadius: 14, border: '1.5px dashed var(--border)' }}>
-                        <Icon name="clipboard-list" style={{ fontSize: 48, color: '#cbd5e1', display: 'block', marginBottom: 12 }} />
-                        <p style={{ color: 'var(--muted)', fontWeight: 600 }}>אין קריאות עדיין</p>
-                        <button className="btn btn-blue" style={{ margin: '16px auto 0', padding: '10px 24px' }} onClick={onNew}>
-                            <Icon name="plus" /> פתח קריאה ראשונה
-                        </button>
-                    </div>
-                )}
-
-                {/* Edit modal */}
-                {editTicket && (
-                    <EditTicketModal ticket={editTicket} onSave={(id, data) => { onEdit(id, data); setEditTicket(null); }} onClose={() => setEditTicket(null)} />
-                )}
-            </div>
-        );
-    }
-
-    function EditTicketModal({ ticket, onSave, onClose }) {
-        const [form, setForm] = useState({ description: ticket.description, location: ticket.location, priority: ticket.priority, image: ticket.image });
-        const fileRef = useRef(null);
-        const resizeImage = (file) => new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = e => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let [w,h]=[img.width,img.height]; if(w>800){h=h*800/w;w=800;} canvas.width=w;canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h); resolve(canvas.toDataURL('image/jpeg',0.7)); }; img.src=e.target.result; }; reader.readAsDataURL(file);
-        });
-        return (
-            <div className="modal-bg" onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
-                <div className="modal-sheet">
-                    <div className="modal-handle"></div>
-                    <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2 style={{ fontWeight: 800, fontSize: 19 }}>עריכת {ticket.id}</h2>
-                        <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
-                    </div>
-                    <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>מיקום</label><input className="input" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} /></div>
-                        <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>דחיפות</label>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                {[{v:'נמוכה',c:'#64748b'},{v:'רגילה',c:'var(--blue)'},{v:'דחופה',c:'var(--red)'}].map(({v,c})=>(
-                                    <button key={v} className="priority-btn" onClick={()=>setForm({...form,priority:v})} style={{ borderColor: form.priority===v?c:'var(--border)', color: form.priority===v?c:'var(--muted)' }}>{v}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>תיאור</label><textarea className="input" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{ height: 90, resize: 'none' }}></textarea></div>
-                        <button className="btn btn-orange" style={{ width: '100%', padding: '13px' }} onClick={() => onSave(ticket.id, form)}>שמור שינויים</button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ===== WORKER TASKS =====
-    function WorkerTasks({ tickets, updateStatus }) {
-        return (
-            <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <h2 style={{ fontWeight: 800, fontSize: 20 }}>משימות פתוחות</h2>
-                    <span style={{ background: '#fff7ed', color: 'var(--orange)', padding: '4px 14px', borderRadius: 20, fontWeight: 700, border: '1.5px solid #fed7aa' }}>{tickets.length}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {tickets.map(ticket => (
-                        <div key={ticket.id} className="ticket-card" style={{ borderColor: ticket.priority==='דחופה'?'#fecaca':'var(--border)', background: ticket.priority==='דחופה'?'#fff5f5':'white' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 4 }}>{ticket.id}</span>
-                                <div style={{ display: 'flex', gap: 6 }}><PriorityBadge priority={ticket.priority} /><StatusBadge status={ticket.status} /></div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(59,130,246,0.06)', borderRadius: 10, marginBottom: 10 }}>
-                                <Icon name="map-marker-alt" style={{ color: 'var(--blue)' }} />
-                                <strong style={{ fontSize: 16 }}>{ticket.location}</strong>
-                                {ticket.openedByName && <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 'auto' }}>נפתח ע"י {ticket.openedByName}</span>}
-                            </div>
-                            <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.6, marginBottom: 10 }}>{ticket.description}</p>
-                            {ticket.tags?.length>0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>{ticket.tags.map(tag=><span key={tag} style={{ background: '#f1f5f9', color: 'var(--muted)', fontSize: 12, padding: '3px 10px', borderRadius: 20 }}>{tag}</span>)}</div>}
-                            {ticket.managerNotes?.length>0 && (
-                                <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: 10, marginBottom: 10 }}>
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--purple)', marginBottom: 6 }}>הערות מנהל:</div>
-                                    {ticket.managerNotes.map(note=><div key={note.id} style={{ fontSize: 13, color: '#4c1d95', marginBottom: 4 }}><span style={{ fontSize: 10, display: 'block', color: 'var(--purple)' }}>{note.date} — {note.by||'מנהל'}</span>{note.text}</div>)}
-                                </div>
-                            )}
-                            {ticket.image && <img src={ticket.image} style={{ width: '100%', maxHeight: 160, objectFit: 'cover', borderRadius: 10, marginBottom: 10 }} alt="" />}
-                            <div style={{ paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
-                                {ticket.status==='פתוחה' && <button className="btn btn-orange" style={{ width: '100%', padding: '12px' }} onClick={()=>updateStatus(ticket.id,'בטיפול')}><Icon name="play" />התחל טיפול</button>}
-                                {ticket.status==='בטיפול' && <button className="btn btn-green" style={{ width: '100%', padding: '12px' }} onClick={()=>updateStatus(ticket.id,'טופלה')}><Icon name="check" />סמן כטופל</button>}
-                            </div>
-                        </div>
-                    ))}
-                    {tickets.length===0 && <div style={{ textAlign: 'center', padding: '64px 24px' }}><Icon name="check-circle" style={{ fontSize: 64, color: '#86efac', display: 'block', marginBottom: 16 }} /><p style={{ fontSize: 20, fontWeight: 700 }}>אין משימות פתוחות!</p><p style={{ color: 'var(--muted)', marginTop: 6 }}>עבודה מצוינת 🎉</p></div>}
-                </div>
-            </div>
-        );
-    }
-
-    // ===== DONE TICKETS (Worker) =====
-    function DoneTickets({ tickets, updateStatus }) {
-        return (
-            <div>
-                <h2 style={{ fontWeight: 800, fontSize: 20, marginBottom: 16 }}>קריאות שטופלו ({tickets.length})</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {tickets.map(ticket => (
-                        <div key={ticket.id} className="ticket-card" style={{ opacity: 0.8 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)' }}>{ticket.id}</span>
-                                <StatusBadge status={ticket.status} />
-                            </div>
-                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{ticket.location}</div>
-                            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>{ticket.description}</p>
-                            <button onClick={()=>updateStatus(ticket.id,'פתוחה')} style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #fcd34d', background: '#fefce8', color: '#a16207', cursor: 'pointer', fontFamily: 'Heebo', fontWeight: 600, fontSize: 13 }}>
-                                <Icon name="sync-alt" /> פתח מחדש
-                            </button>
-                        </div>
-                    ))}
-                    {tickets.length===0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>אין קריאות שטופלו עדיין</div>}
-                </div>
-            </div>
-        );
-    }
-
-    // ===== MANAGER DASHBOARD =====
-    function ManagerDashboard({ tickets }) {
-        const stats = [
-            { label: 'סה״כ', count: tickets.length, icon: 'list', bg: '#eff6ff', color: 'var(--blue)', iconBg: 'var(--blue)' },
-            { label: 'ממתינות', count: tickets.filter(t=>t.status==='פתוחה').length, icon: 'exclamation-circle', bg: '#fef2f2', color: 'var(--red)', iconBg: 'var(--red)' },
-            { label: 'בעבודה', count: tickets.filter(t=>t.status==='בטיפול').length, icon: 'tools', bg: '#fff7ed', color: 'var(--orange)', iconBg: 'var(--orange)' },
-            { label: 'טופלו', count: tickets.filter(t=>t.status==='טופלה').length, icon: 'check-circle', bg: '#f0fdf4', color: 'var(--green)', iconBg: 'var(--green)' },
-        ];
-
-        const urgent = tickets.filter(t => t.priority==='דחופה' && t.status!=='טופלה');
-
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <h2 style={{ fontWeight: 800, fontSize: 20 }}>דשבורד ניהול</h2>
-                <div className="stat-grid">
-                    {stats.map(s => (
-                        <div key={s.label} className="stat-card" style={{ background: s.bg }}>
-                            <div className="stat-icon" style={{ background: s.iconBg }}><Icon name={s.icon} /></div>
-                            <div><div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500 }}>{s.label}</div><div style={{ fontSize: 28, fontWeight: 800, color: s.color, lineHeight: 1.2 }}>{s.count}</div></div>
-                        </div>
-                    ))}
-                </div>
-                {urgent.length > 0 && (
-                    <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: 14, padding: 14 }}>
-                        <div style={{ fontWeight: 700, color: 'var(--red)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Icon name="exclamation-triangle" /> {urgent.length} קריאות דחופות פתוחות
-                        </div>
-                        {urgent.map(t => (
-                            <div key={t.id} style={{ background: 'white', borderRadius: 10, padding: 10, marginBottom: 8, border: '1px solid #fecaca' }}>
-                                <div style={{ fontWeight: 700 }}>{t.location}</div>
-                                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{t.description}</div>
-                                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{t.id} • {t.date}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
-    }
-
-    // ===== ALL TICKETS (Manager) =====
-    function AllTickets({ tickets, addNote, toggleTag, updateStatus, currentUser }) {
-        const [search, setSearch] = useState('');
-        const [filterStatus, setFilterStatus] = useState('הכל');
-        const [selectedTicket, setSelectedTicket] = useState(null);
-
-        const filtered = tickets.filter(t => {
-            const matchSearch = !search || t.id?.toLowerCase().includes(search.toLowerCase()) || t.location?.includes(search) || t.description?.includes(search) || t.openedByName?.includes(search);
-            const matchStatus = filterStatus==='הכל' || t.status===filterStatus;
-            return matchSearch && matchStatus;
-        });
-
-        const handleAddNote = (id, text) => {
-            addNote(id, text);
-            const note = { id: Date.now(), text, date: new Date().toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}), by: currentUser.name };
-            setSelectedTicket({ ...selectedTicket, managerNotes: [...(selectedTicket.managerNotes||[]), note] });
-        };
-
-        const handleToggleTag = (id, tag) => {
-            toggleTag(id, tag);
-            const curr = selectedTicket.tags||[];
-            setSelectedTicket({ ...selectedTicket, tags: curr.includes(tag)?curr.filter(t=>t!==tag):[...curr,tag] });
-        };
-
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ position: 'relative' }}>
-                    <Icon name="search" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14 }} />
-                    <input className="input" type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="חיפוש לפי מיקום, שם עובד..." style={{ paddingRight: 36 }} />
-                </div>
-                <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', padding: 4, borderRadius: 12 }}>
-                    {['הכל','פתוחה','בטיפול','טופלה'].map(s=>(
-                        <button key={s} onClick={()=>setFilterStatus(s)} style={{ flex: 1, padding: '7px 2px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 500, fontFamily: 'Heebo', background: filterStatus===s?'white':'transparent', color: filterStatus===s?'var(--text)':'var(--muted)', boxShadow: filterStatus===s?'0 1px 3px rgba(0,0,0,0.1)':'none' }}>{s}</button>
-                    ))}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {filtered.map(ticket => (
-                        <div key={ticket.id} className="ticket-card" style={{ cursor: 'pointer' }} onClick={() => setSelectedTicket(ticket)}>
-                            <div style={{ display: 'flex', gap: 10 }}>
-                                {ticket.image ? <img src={ticket.image} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} alt="" /> : <div style={{ width: 50, height: 50, borderRadius: 10, background: '#f1f5f9', border: '1.5px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', flexShrink: 0 }}><Icon name="image" /></div>}
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                        <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)' }}>{ticket.id}</span>
-                                        <StatusBadge status={ticket.status} />
-                                    </div>
-                                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{ticket.location}</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                                        <PriorityBadge priority={ticket.priority} />
-                                        {ticket.openedByName && <span style={{ fontSize: 11, color: 'var(--muted)', background: '#f1f5f9', padding: '2px 8px', borderRadius: 20 }}><Icon name="user" /> {ticket.openedByName}</span>}
-                                        {ticket.managerNotes?.length>0 && <span style={{ fontSize: 11, color: 'var(--purple)', background: '#faf5ff', padding: '2px 8px', borderRadius: 20 }}>{ticket.managerNotes.length} הערות</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    {filtered.length===0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>לא נמצאו קריאות</div>}
-                </div>
-
-                {selectedTicket && (
-                    <TicketModal ticket={selectedTicket} onClose={()=>setSelectedTicket(null)} onAddNote={handleAddNote} onToggleTag={handleToggleTag}
-                        onReopen={id=>{ updateStatus(id,'פתוחה'); setSelectedTicket({...selectedTicket,status:'פתוחה'}); }} />
-                )}
-            </div>
-        );
-    }
-
-    // ===== TICKET MODAL =====
-    function TicketModal({ ticket, onClose, onAddNote, onToggleTag, onReopen }) {
-        const [noteText, setNoteText] = useState('');
-        return (
-            <div className="modal-bg" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
-                <div className="modal-sheet">
-                    <div className="modal-handle"></div>
-                    <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div><h2 style={{ fontWeight: 800, fontSize: 19 }}>{ticket.location}</h2><span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)' }}>{ticket.id}</span></div>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            {ticket.status==='טופלה' && <button onClick={()=>onReopen(ticket.id)} style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #fcd34d', background: '#fefce8', color: '#a16207', cursor: 'pointer', fontFamily: 'Heebo', fontWeight: 600, fontSize: 13 }}><Icon name="sync-alt" /> פתח</button>}
-                            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: '50%', border: '1.5px solid var(--border)', background: 'white', cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
-                        </div>
-                    </div>
-                    <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div style={{ background: '#f8fafc', borderRadius: 12, padding: 14 }}>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}><StatusBadge status={ticket.status} /><PriorityBadge priority={ticket.priority} />{ticket.openedByName && <span style={{ fontSize: 11, color: 'var(--muted)', background: '#f1f5f9', padding: '2px 8px', borderRadius: 20 }}>נפתח ע"י {ticket.openedByName}</span>}</div>
-                            <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7 }}>{ticket.description}</p>
-                        </div>
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}><Icon name="tags" style={{ color: 'var(--purple)', marginLeft: 6 }} />תיוג</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                {AVAILABLE_TAGS.map(tag => { const active=ticket.tags?.includes(tag); return <button key={tag} className="tag-btn" onClick={()=>onToggleTag(ticket.id,tag)} style={{ borderColor: active?'var(--purple)':'var(--border)', background: active?'var(--purple)':'white', color: active?'white':'var(--muted)', fontFamily: 'Heebo' }}>{tag}</button>; })}
-                            </div>
-                        </div>
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}><Icon name="comment-dots" style={{ color: 'var(--purple)', marginLeft: 6 }} />הערות</div>
-                            {ticket.managerNotes?.length>0 && <div style={{ background: '#faf5ff', borderRadius: 12, padding: 10, marginBottom: 10, maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>{ticket.managerNotes.map(note=><div key={note.id} style={{ background: 'white', borderRadius: 8, padding: 10, border: '1px solid #ede9fe' }}><div style={{ fontSize: 10, fontWeight: 700, color: 'var(--purple)', marginBottom: 3 }}>{note.date}{note.by&&` — ${note.by}`}</div><div style={{ fontSize: 13 }}>{note.text}</div></div>)}</div>}
-                            <textarea className="input" value={noteText} onChange={e=>setNoteText(e.target.value)} placeholder="הוסף הערה..." style={{ height: 80, resize: 'none', marginBottom: 8 }}></textarea>
-                            <button className="btn" onClick={()=>{ if(noteText.trim()){onAddNote(ticket.id,noteText);setNoteText('');} }} disabled={!noteText.trim()} style={{ width: '100%', padding: '12px', background: noteText.trim()?'var(--purple)':'#e9d5ff', color: 'white', fontSize: 14 }}>שמור הערה</button>
-                        </div>
-                        {ticket.image && <div><div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}><Icon name="camera" style={{ color: 'var(--purple)', marginLeft: 6 }} />תמונה</div><img src={ticket.image} style={{ width: '100%', maxHeight: 240, objectFit: 'contain', borderRadius: 12, border: '1px solid var(--border)', background: '#f8fafc' }} alt="" /></div>}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ===== USERS MANAGER =====
-    function UsersManager({ apiUrl }) {
-        const [users, setUsers] = useState([]);
-        const [loading, setLoading] = useState(true);
-        const [showAdd, setShowAdd] = useState(false);
-        const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'requester' });
-        const [saving, setSaving] = useState(false);
-        const [msg, setMsg] = useState('');
-
-        const loadUsers = async () => {
-            setLoading(true);
-            try {
-                const res = await fetch(`${apiUrl}?action=getUsers`);
-                const data = await res.json();
-                setUsers(data.users || []);
-            } catch { setMsg('שגיאה בטעינת משתמשים'); }
-            setLoading(false);
-        };
-
-        useEffect(() => { loadUsers(); }, []);
-
-        const handleAdd = async () => {
-            if (!newUser.username || !newUser.password || !newUser.name) { setMsg('יש למלא את כל השדות'); return; }
-            setSaving(true);
-            try {
-                await fetch(apiUrl, { method: 'POST', body: JSON.stringify({ action: 'addUser', user: newUser }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' });
-                setMsg('המשתמש נוסף בהצלחה');
-                setNewUser({ username: '', password: '', name: '', role: 'requester' });
-                setShowAdd(false);
-                setTimeout(() => loadUsers(), 1500);
-            } catch { setMsg('שגיאה בהוספת משתמש'); }
-            setSaving(false);
-        };
-
-        const handleDelete = async (username) => {
-            if (!confirm(`למחוק את המשתמש ${username}?`)) return;
-            try {
-                await fetch(apiUrl, { method: 'POST', body: JSON.stringify({ action: 'deleteUser', username }), headers: { "Content-Type": "text/plain;charset=utf-8" }, mode: 'no-cors' });
-                setMsg('המשתמש נמחק');
-                setTimeout(() => loadUsers(), 1500);
-            } catch { setMsg('שגיאה במחיקה'); }
-        };
-
-        const roleLabel = { requester: 'עובד ייצור', worker: 'איש אחזקה', manager: 'מנהל' };
-        const roleColor = { requester: 'var(--blue)', worker: 'var(--orange)', manager: 'var(--purple)' };
-        const roleBg = { requester: '#eff6ff', worker: '#fff7ed', manager: '#faf5ff' };
-
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h2 style={{ fontWeight: 800, fontSize: 20 }}>ניהול משתמשים</h2>
-                    <button className="btn btn-blue" style={{ padding: '8px 16px', fontSize: 13 }} onClick={() => setShowAdd(true)}>
-                        <Icon name="plus" /> משתמש חדש
-                    </button>
-                </div>
-
-                {msg && <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', color: 'var(--green)', fontSize: 13 }}>{msg}</div>}
-
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}><Icon name="spinner" className="spinner" style={{ fontSize: 24 }} /></div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {users.map(user => (
-                            <div key={user.username} style={{ background: 'white', borderRadius: 14, border: '1px solid var(--border)', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: roleColor[user.role]||'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: 'white' }}>
-                                        {user.name?.charAt(0)||'?'}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontWeight: 700, fontSize: 15 }}>{user.name}</div>
-                                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>@{user.username}</div>
-                                        <span style={{ fontSize: 11, fontWeight: 600, color: roleColor[user.role], background: roleBg[user.role], padding: '2px 8px', borderRadius: 20, marginTop: 4, display: 'inline-block' }}>{roleLabel[user.role]||user.role}</span>
-                                    </div>
-                                </div>
-                                <button onClick={() => handleDelete(user.username)} style={{ border: 'none', background: '#fef2f2', color: 'var(--red)', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontSize: 14 }}>
-                                    <Icon name="trash" />
-                                </button>
-                            </div>
-                        ))}
-                        {users.length===0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--muted)' }}>אין משתמשים עדיין</div>}
-                    </div>
-                )}
-
-                {/* Add user modal */}
-                {showAdd && (
-                    <div className="modal-bg" onClick={e=>{ if(e.target===e.currentTarget) setShowAdd(false); }}>
-                        <div className="modal-sheet">
-                            <div className="modal-handle"></div>
-                            <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 style={{ fontWeight: 800, fontSize: 19 }}>הוסף משתמש חדש</h2>
-                                <button onClick={()=>setShowAdd(false)} style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
-                            </div>
-                            <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>שם מלא</label><input className="input" value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})} placeholder="לדוגמה: ישראל ישראלי" /></div>
-                                <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>שם משתמש</label><input className="input" value={newUser.username} onChange={e=>setNewUser({...newUser,username:e.target.value})} placeholder="לדוגמה: israel1" autoComplete="off" /></div>
-                                <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>סיסמה</label><input className="input" type="password" value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} placeholder="סיסמה ראשונית" autoComplete="new-password" /></div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>תפקיד</label>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        {[{v:'requester',l:'עובד ייצור'},{v:'worker',l:'איש אחזקה'},{v:'manager',l:'מנהל'}].map(({v,l})=>(
-                                            <button key={v} className="priority-btn" onClick={()=>setNewUser({...newUser,role:v})} style={{ borderColor: newUser.role===v?roleColor[v]:'var(--border)', background: newUser.role===v?roleBg[v]:'white', color: newUser.role===v?roleColor[v]:'var(--muted)', fontSize: 12 }}>{l}</button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <button className="btn btn-blue" style={{ width: '100%', padding: '14px', fontSize: 16 }} onClick={handleAdd} disabled={saving}>
-                                    {saving ? <><Icon name="spinner" className="spinner" /> שומר...</> : <><Icon name="user-plus" /> הוסף משתמש</>}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    }
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-</script>
+    </script>
 </body>
 </html>
